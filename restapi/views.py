@@ -10,7 +10,6 @@ from restapi.serializers.tube import TubeSerializer
 from restapi.services import tube_service
 
 
-
 class SampleViewSet(viewsets.ViewSet):
 
     def list(self, request):
@@ -43,9 +42,6 @@ class SampleViewSet(viewsets.ViewSet):
         sample_service.delete_sample(sample)
         return Response(status=204)
     
-
-
-
 
 class TubeViewSet(ViewSet):
 

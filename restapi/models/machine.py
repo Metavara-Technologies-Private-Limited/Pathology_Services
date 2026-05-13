@@ -1,4 +1,5 @@
 from django.db import models
+from .machine import*
 
 class Machine(models.Model):
     machine_code = models.CharField(max_length=50, unique=True)
