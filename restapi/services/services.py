@@ -59,6 +59,40 @@ def get_pending_by_id(pending_id):
     return PendingShipment.objects.get(id=pending_id)
 
 
+
+# =========================================
+# ScheduleShipping
+# =========================================
+
+
+from restapi.models import (
+    PendingShipment,
+    ScheduleShipping
+)
+
+
+def create_schedule_shipping(data):
+
+    pending = PendingShipment.objects.get(
+        id=data.get("pending_id")
+    )
+
+    schedule = ScheduleShipping.objects.create(
+        pending=pending,
+        ship_date=data.get("ship_date"),
+        ship_time=data.get("ship_time"),
+        dispatched_by=data.get("dispatched_by"),
+        ship_to=data.get("ship_to")
+    )
+
+    return schedule
+
+
+def get_all_schedule_shipping():
+
+    return ScheduleShipping.objects.all()
+
+
 # =========================================
 # MOVE PENDING → SHIPPED
 # =========================================

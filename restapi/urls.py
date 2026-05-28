@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     PatientView,
     PendingShipmentView,
+    ScheduleShippingView,
     MoveToShippedView,
     ShipmentShippedView,
     MoveToReceivedView,
@@ -31,4 +32,7 @@ urlpatterns = [
 
     # Activity Logs APIs
     path('activity-logs/', ActivityLogsView.as_view(), name='activity-logs'),
+
+    # ScheduleShipping
+    path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
 ]

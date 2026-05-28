@@ -9,6 +9,8 @@ from .services.services import (
     create_pending_shipment,
     get_all_pending_shipments,
     get_pending_by_id,
+    create_schedule_shipping,
+    get_all_schedule_shipping,
     move_to_shipped,
     get_all_shipped_shipments,
     move_to_received,
@@ -78,6 +80,48 @@ class PendingShipmentView(APIView):
         return Response({
             "message": "Pending Shipment created successfully",
             "id": pending.id
+        }, status=status.HTTP_201_CREATED)
+    
+
+
+# =========================================
+# ScheduleShippingView
+# =========================================
+
+class ScheduleShippingView(APIView):
+
+    def get(self, request):
+
+        schedules = get_all_schedule_shipping()
+
+        data = []
+
+        for item in schedules:
+
+            data.append({
+                "id": item.id,
+                "pending_id": item.pending.id,
+                "sample_no": item.pending.sample_no,
+                "sample_type": item.pending.sample_type,
+                "test_name": item.pending.test_name,
+                "patient": item.pending.patient.patient_name,
+                "ship_date": item.ship_date,
+                "ship_time": item.ship_time,
+                "dispatched_by": item.dispatched_by,
+                "ship_to": item.ship_to
+            })
+
+        return Response(data)
+
+    def post(self, request):
+
+        schedule = create_schedule_shipping(
+            request.data
+        )
+
+        return Response({
+            "message": "Schedule Shipping created successfully",
+            "id": schedule.id
         }, status=status.HTTP_201_CREATED)
 
 

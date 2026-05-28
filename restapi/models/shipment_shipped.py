@@ -12,7 +12,7 @@ class ShipmentShipped(models.Model):
     pending_shipment = models.ForeignKey(
         PendingShipment,
         on_delete=models.CASCADE, null=True,
-    blank=True,
+        blank=True,
         related_name='shipped_records',
         
     )
