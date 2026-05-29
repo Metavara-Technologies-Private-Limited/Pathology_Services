@@ -81,7 +81,7 @@ DATABASES = {
         'NAME': 'pathology_db',
         'USER': 'postgres',
         'PASSWORD': 'Tiger123',
-        'HOST': 'localhost',
+        'HOST': '72.62.227.137',
         'PORT': '5432',
     }
 }
