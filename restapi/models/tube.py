@@ -1,6 +1,14 @@
 from django.db import models
+import uuid
 
 class Tube(models.Model):
+
+    uuid = models.UUIDField(
+    default=uuid.uuid4,
+    editable=False,
+    unique=True
+   )
+
     tube_code=models.CharField(max_length=50, unique=True)
     tube_name=models.CharField(max_length=100)
     status=models.BooleanField(default=True)

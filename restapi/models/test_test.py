@@ -1,66 +1,223 @@
 from django.db import models
-from .test_category import Category
-from .test_parameter import Parameter
-from .tube import Tube
-from .test_category import Category
-from .service import Service
-from .sample import Sample
+import uuid
 
+from restapi.models.tube import Tube
+from restapi.models.test_parameter import Parameter
+from restapi.models.test_template import Template
+from restapi.models.sample import Sample
 
 
 class Test(models.Model):
 
+    uuid = models.UUIDField(
+    default=uuid.uuid4,
+    editable=False,
+    null=True,
+    blank=True
+   )
+
     REPORT_TYPE_CHOICES = [
-        ('parameter', 'Parameter'),
-        ('template', 'Template'),
+        ('PARAMETER', 'By Parameter'),
+        ('TEMPLATE', 'By Template'),
     ]
 
-    category = models.ForeignKey(Category, on_delete=models.CASCADE,related_name="test_category" )
-    tube= models.ForeignKey(Tube, on_delete=models.CASCADE, related_name="tests_service")
-    service=models.ForeignKey(Service, on_delete=models.CASCADE, related_name="tests_service")
+    test_code = models.CharField(
+        max_length=50,
+        unique=True
+    )
 
-    test_code = models.CharField(max_length=50, unique=True)
-    test_name = models.CharField(max_length=100)
-    print_name = models.CharField(max_length=150, null=True, blank=True)
-    service_name = models.CharField(max_length=150, null=True, blank=True)
-    tube_name = models.CharField(max_length=150, null=True, blank=True)
-    test_completion_time = models.CharField(max_length=10, null=True, blank=True)
-    is_sensitive = models.BooleanField(default=False)
-    suggestion_note = models.TextField(null=True, blank=True)
-    disclaimer = models.TextField(null=True, blank=True)
-    status = models.BooleanField(default=True)
-    report_type=models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    test_name = models.CharField(
+        max_length=255
+    )
+
+    print_name = models.CharField(
+        max_length=255
+    )
+
+    service_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    tube_name = models.ForeignKey(
+        Tube,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tests'
+    )
+
+    test_completion_time = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    is_sensitive = models.BooleanField(
+        default=False
+    )
+
+    suggestion_note = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    disclaimer = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    report_type = models.CharField(
+        max_length=20,
+        choices=REPORT_TYPE_CHOICES,
+        default='PARAMETER'
+    )
+
+    status = models.BooleanField(
+        default=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
 
     class Meta:
-        db_table = "test"
+        db_table = "tests"
+        ordering = ['-id']
 
     def __str__(self):
         return self.test_name
-
-
     
-class By_Parameter(models.Model):
 
-    parameter=models.ForeignKey(Parameter, on_delete=models.CASCADE,related_name="by_parameter")
-    sample=models.ForeignKey(Sample, on_delete=models.CASCADE, related_name='by_parameter_sample')
-    test=models.ForeignKey(Test,on_delete=models.CASCADE,related_name="by_parameter_test")
-    
+
+class TestParameter(models.Model):
+
+    test = models.ForeignKey(
+        Test,
+        on_delete=models.CASCADE,
+        related_name='test_parameters'
+    )
+
+    parameter = models.ForeignKey(
+        Parameter,
+        on_delete=models.CASCADE,
+        related_name='parameter_tests'
+    )
+
+    display_order = models.PositiveIntegerField(
+        default=1
+    )
+
+    status = models.BooleanField(
+        default=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
     class Meta:
-        db_table = "By_Parameter"
+        db_table = "test_parameters"
+        ordering = ['display_order']
 
     def __str__(self):
-        return f"{self.test} - {self.report_type}"
+        return f"{self.test.test_name} - {self.parameter.parameter_name}"
     
-class By_Template(models.Model):
 
-    parameter=models.ForeignKey(Parameter, on_delete=models.CASCADE,related_name="by_template_parameter")
-    sample=models.ForeignKey(Sample, on_delete=models.CASCADE, related_name='by_template_sample')
-    test=models.ForeignKey(Test,on_delete=models.CASCADE,related_name="by_template_test")
-    
+
+class TestTemplate(models.Model):
+
+    test = models.ForeignKey(
+        Test,
+        on_delete=models.CASCADE,
+        related_name='test_templates'
+    )
+
+    template = models.ForeignKey(
+        Template,
+        on_delete=models.CASCADE,
+        related_name='template_tests'
+    )
+
+    status = models.BooleanField(
+        default=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
     class Meta:
-        db_table = "By_Template"
+        db_table = "test_templates"
+        ordering = ['-id']
 
     def __str__(self):
-        return f"{self.test} - {self.report_type}"
+        return f"{self.test.test_name} - {self.template.template_name}"
+
+
+
+class TestSample(models.Model):
+
+    test = models.ForeignKey(
+        Test,
+        on_delete=models.CASCADE,
+        related_name='test_samples'
+    )
+
+    sample = models.ForeignKey(
+        Sample,
+        on_delete=models.CASCADE,
+        related_name='sample_tests'
+    )
+
+    frequency = models.PositiveIntegerField(
+        default=1
+    )
+
+    status = models.BooleanField(
+        default=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        db_table = "test_samples"
+        ordering = ['-id']
+
+    def __str__(self):
+        return f"{self.test.test_name} - {self.sample.sample_name}"

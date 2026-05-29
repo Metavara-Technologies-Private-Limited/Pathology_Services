@@ -1,25 +1,49 @@
 from django.db import models
-from .machine import*
+from .clinic import Clinic
+import uuid
 
 class Machine(models.Model):
-    machine_code = models.CharField(max_length=50, unique=True)
-    machine_name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.machine_name
     
-    class meta:
-        db_table = "Machine"
+    uuid = models.UUIDField(
+    default=uuid.uuid4,
+    editable=False,
+    unique=True
+)
+    clinic = models.ForeignKey(
+    Clinic,
+    on_delete=models.CASCADE,
+    related_name="machines"
+)
 
-class Machine_Parameters(models.Model):
-    machine = models.ForeignKey("Machine", on_delete=models.CASCADE, related_name="machine_parameters")
-    machine_parameter_code = models.CharField(max_length=50,)
-    machine_parameter_name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
+    machine_code = models.CharField(
+        max_length=50,
+        unique=True
+    )
 
-    def __str__(self):
-        return self.machine_parameter_name
-    
+    machine_name = models.CharField(
+        max_length=255
+    )
+
+    status = models.BooleanField(
+        default=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
     class Meta:
-        db_table = "Machine_Parameter"
+        db_table = "machines"
+        ordering = ['-id']
+
+    def __str__(self):
+
+        return self.machine_name
