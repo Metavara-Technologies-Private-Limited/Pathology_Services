@@ -31,7 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'django.contrib.admin',        # ✅ MUST be there
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -128,3 +128,4 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS':
     'drf_spectacular.openapi.AutoSchema',
 }
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
