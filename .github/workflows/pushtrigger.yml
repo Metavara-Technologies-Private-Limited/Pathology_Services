@@ -58,12 +58,12 @@ jobs:
           script: |
             cd /opt/apps/pathology
 
-            docker compose down backend || true
-
             docker compose pull backend
 
-            docker compose up -d backend
+            docker compose up -d --force-recreate backend
 
             sleep 10
+
+            docker ps | grep pathology-backend
 
             docker exec pathology-backend python manage.py migrate || true
