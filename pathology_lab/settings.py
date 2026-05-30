@@ -79,7 +79,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pathology_db',
-        'USER': 'postgres',
+        'USER': 'pathology_user',
         'PASSWORD': 'Tiger123',
         'HOST': '72.62.227.137',
         'PORT': '5432',
