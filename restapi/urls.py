@@ -129,7 +129,7 @@ from .views import (
     ActivityLogsView
 )
 
-urlpatterns = [
+urlpatterns = router.urls + [
 
     # Patient APIs
     path('patients/', PatientView.as_view(), name='patients'),
