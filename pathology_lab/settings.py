@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-idk_3x1@_-p1c-6ea3$46xufth5!_3#8q0%s6(rwlbc_a7d)91
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'restapi',
     'drf_spectacular',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +51,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
 ]
 
 ROOT_URLCONF = 'pathology_lab.urls'
@@ -79,9 +86,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pathology_db',
-        'USER': 'postgres',
+        'USER': 'pathology_user',
         'PASSWORD': 'Tiger123',
-        'HOST': 'localhost',
+        'HOST': '72.62.227.137',
         'PORT': '5432',
     }
 }
