@@ -1,12 +1,12 @@
 from rest_framework.routers import DefaultRouter
-
+from restapi.views import *
+from django.urls import path
 from restapi.views import (
     SampleViewSet,
     TubeViewSet,
     ParameterViewSet,
     ParameterReferenceRangeViewSet,
     TemplateViewSet,
-    TemplateParameterViewSet,
     TestViewSet,
     CategoryViewSet,
     PathologyProfileViewSet,
@@ -39,12 +39,6 @@ router.register(
     r'templates',
     TemplateViewSet,
     basename='templates'
-)
-
-router.register(
-    r'template-parameters',
-    TemplateParameterViewSet,
-    basename='template-parameters'
 )
 router.register(
     r'tests',
@@ -115,8 +109,11 @@ router.register(
     TestTemplateLinkViewSet,
     basename='test-template-links'
 )
-
 urlpatterns = router.urls
+
+
+
+
 from django.urls import path
 from .views import (
     PatientView,
@@ -129,7 +126,7 @@ from .views import (
     ActivityLogsView
 )
 
-urlpatterns = [
+urlpatterns = router.urls + [
 
     # Patient APIs
     path('patients/', PatientView.as_view(), name='patients'),

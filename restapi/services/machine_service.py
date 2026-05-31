@@ -21,19 +21,31 @@ class MachineService:
     @staticmethod
     def create_machine(validated_data):
 
-        return Machine.objects.create(
-            **validated_data
-        )
+        machine_parameters = validated_data.pop('machine_parameters', [] )
+
+        instance = Machine.objects.create(**validated_data)
+
+        instance.machine_parameters.set(machine_parameters)
+
+        return instance
+
 
     @staticmethod
-    def update_machine(instance, validated_data):
+    def update_machine(instance,validated_data):
+
+        machine_parameters = validated_data.pop('machine_parameters',None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
 
+        if machine_parameters is not None:
+
+            instance.machine_parameters.set(machine_parameters)
+
         return instance
+
 
     @staticmethod
     def delete_machine(instance):
