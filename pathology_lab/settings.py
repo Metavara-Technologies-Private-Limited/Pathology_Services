@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -51,7 +52,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 ]
 
@@ -85,10 +85,10 @@ WSGI_APPLICATION = 'pathology_lab.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pathology_db',
-        'USER': 'pathology_user',
-        'PASSWORD': 'Tiger123',
-        'HOST': '72.62.227.137',
+        'NAME': 'pathology_db_1',
+        'USER': 'postgres',
+        'PASSWORD': '1234',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
