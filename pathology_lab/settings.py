@@ -85,10 +85,10 @@ WSGI_APPLICATION = 'pathology_lab.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pathology_db_1',
-        'USER': 'postgres',
-        'PASSWORD': '1234',
-        'HOST': 'localhost',
+        'NAME': 'pathology_db',
+        'USER': 'pathology_user',
+        'PASSWORD': 'Tiger123',
+        'HOST': '72.62.227.137',
         'PORT': '5432',
     }
 }
