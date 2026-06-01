@@ -1,6 +1,6 @@
 from django.db import models
 import uuid
-
+from .clinic import Clinic
 from restapi.models.tube import Tube
 from restapi.models.test_parameter import Parameter
 from restapi.models.test_template import Template
@@ -9,12 +9,18 @@ from restapi.models.sample import Sample
 
 class Test(models.Model):
 
-    uuid = models.UUIDField(
-    default=uuid.uuid4,
-    editable=False,
-    null=True,
-    blank=True
-   )
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    clinic = models.ForeignKey(
+    Clinic,
+    on_delete=models.CASCADE,
+    related_name="tests",
+    )
+
 
     REPORT_TYPE_CHOICES = [
         ('PARAMETER', 'By Parameter'),
