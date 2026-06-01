@@ -1,27 +1,23 @@
 from django.db import models
 import uuid
 from restapi.models.machine import Machine
-from restapi.models.test_parameter import Parameter
 
 
 class MachineParameter(models.Model):
 
-    uuid = models.UUIDField(
-    default=uuid.uuid4,
-    editable=False,
-    unique=True
-)
-
-    machine = models.ForeignKey(
-        Machine,
-        on_delete=models.CASCADE,
-        related_name='machine_parameters'
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
     )
 
-    parameter = models.ForeignKey(
-        Parameter,
-        on_delete=models.CASCADE,
-        related_name='parameter_machines'
+    machine_parameter_code = models.CharField(
+        max_length=50,
+        unique=True
+    )
+
+    machine_parameter_name = models.CharField(
+        max_length=255
     )
 
     status = models.BooleanField(
@@ -46,7 +42,4 @@ class MachineParameter(models.Model):
 
     def __str__(self):
 
-        return (
-            f"{self.machine.machine_name} - "
-            f"{self.parameter.parameter_name}"
-        )
+        return self.machine_parameter_name

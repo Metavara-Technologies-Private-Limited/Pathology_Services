@@ -21,24 +21,29 @@ class MachineParameterService:
         ).first()
 
     @staticmethod
-    def create_machine_parameter(
-        validated_data
-    ):
+    def create_machine_parameter(validated_data):
 
-        return MachineParameter.objects.create(
-            **validated_data
-        )
+        machines = validated_data.pop('machines',[])
+        instance = MachineParameter.objects.create(**validated_data)
+
+        instance.machines.set(machines)
+
+        return instance
+
 
     @staticmethod
-    def update_machine_parameter(
-        instance,
-        validated_data
-    ):
+    def update_machine_parameter(instance, validated_data):
+
+        machines = validated_data.pop('machines', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
+
+        if machines is not None:
+
+            instance.machines.set(machines)
 
         return instance
 

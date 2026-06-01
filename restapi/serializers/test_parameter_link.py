@@ -14,10 +14,21 @@ class TestParameterLinkSerializer(
         read_only=True
     )
 
+    test_code = serializers.CharField(
+    source='test.test_code',
+    read_only=True
+    )
+
     parameter_name = serializers.CharField(
         source='parameter.parameter_name',
         read_only=True
     )
+
+    parameter_code = serializers.CharField(
+        source='parameter.parameter_code',
+        read_only=True
+    )
+
 
     class Meta:
 

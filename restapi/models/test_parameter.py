@@ -3,11 +3,12 @@ import uuid
 
 class Parameter(models.Model):
 
-    uuid = models.UUIDField(
-    default=uuid.uuid4,
-    editable=False,
-    unique=True
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
     )
+
 
     TYPE_CHOICES = [
         ('NUMERIC', 'Numeric'),
@@ -15,12 +16,50 @@ class Parameter(models.Model):
     ]
 
     UNIT_CHOICES = [
-        ('mg_dl', 'mg/dL'),
-        ('g_dl', 'g/dL'),
-        ('ml', 'mL'),
-        ('mmol_l', 'mmol/L'),
-        ('percent', '%'),
-    ]
+    ("mL", "mL"),
+    ("mg/dL", "mg/dL"),
+    ("cells/hpf", "cells/hpf"),
+    ("%", "%"),
+    ("IU/L", "IU/L"),
+    ("NA", "NA"),
+    ("IU/mL", "IU/mL"),
+    ("meq/L", "meq/L"),
+    ("mmol/L", "mmol/L"),
+    ("ng/mL", "ng/mL"),
+    ("g/dL", "g/dL"),
+    ("pg", "pg"),
+    ("ug/mL", "ug/mL"),
+    ("mm in 1st hour", "mm in 1st hour"),
+    ("pg/mL", "pg/mL"),
+    ("pmol/dL", "pmol/dL"),
+    ("pmol/L", "pmol/L"),
+    ("nmol/L", "nmol/L"),
+    ("umol/mL", "umol/mL"),
+    ("x10^6 cells/cumm", "x10^6 cells/cumm"),
+    ("U/L", "U/L"),
+    ("x10^3 cells/cumm", "x10^3 cells/cumm"),
+    ("uIU/mL", "uIU/mL"),
+    ("umol/L", "umol/L"),
+    ("x10^12/L", "x10^12/L"),
+    ("x10^9/L", "x10^9/L"),
+    ("fL", "fL"),
+    ("sec", "sec"),
+    ("mg/L", "mg/L"),
+    ("mIU/mL", "mIU/mL"),
+    ("ng/dL", "ng/dL"),
+    ("mIU/L", "mIU/L"),
+    ("ug/dL", "ug/dL"),
+    ("Mil/mL", "Mil/mL"),
+    ("mic/sec", "mic/sec"),
+    ("Mil/ejac", "Mil/ejac"),
+    ("min", "min"),
+    ("Units", "Units"),
+    ("Quality Score", "Quality Score"),
+    ("Days", "Days"),
+    ("Qualitative", "Qualitative"),
+    ("cells/cumm.", "cells/cumm."),
+    ("µg/mL", "µg/mL"),
+]
 
     parameter_code = models.CharField(
         max_length=50,
@@ -81,6 +120,10 @@ class Parameter(models.Model):
 
     updated_at = models.DateTimeField(
         auto_now=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
     )
 
     class Meta:
@@ -226,6 +269,10 @@ class ParameterReferenceRange(models.Model):
 
     updated_at = models.DateTimeField(
         auto_now=True
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
     )
 
     class Meta:
