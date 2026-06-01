@@ -19,6 +19,16 @@ class TestSampleLinkSerializer(
         read_only=True
     )
 
+    sample_code = serializers.CharField(
+        source='sample.sample_code',
+        read_only=True
+    )
+
+    sample_code = serializers.CharField(
+    source='sample.sample_code',
+    read_only=True
+    )
+
     class Meta:
 
         model = TestSample

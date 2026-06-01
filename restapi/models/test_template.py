@@ -1,24 +1,47 @@
-from django.db import models
-from restapi.models.test_parameter import Parameter
 import uuid
+from django.db import models
+from .service import Service
+from .clinic import Clinic
+
 
 class Template(models.Model):
 
-    uuid = models.UUIDField(
-    default=uuid.uuid4,
-    editable=False,
-    null=True,
-    blank=True
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    clinic = models.ForeignKey(
+    Clinic,
+    on_delete=models.CASCADE,
+    related_name="templates",
     )
 
     TEMPLATE_FOR_CHOICES = [
-        ('TEST', 'Test'),
-        ('PROFILE', 'Profile'),
+        ("LEAD", "Lead"),
+        ("PATHOLOGY", "Pathology"),
+        ("RADIOLOGY", "Radiology"),
+        ("EXAMINATION", "Examination"),
+        ("INVESTIGATION", "Investigation"),
+        ("SURGERY", "Surgery"),
+        ("OUTCOME", "Outcome"),
     ]
 
-    TEMPLATE_TYPE_CHOICES = [
-        ('TEXT', 'Text'),
-        ('TABLE', 'Table'),
+    TEMPLATE_FORMAT_CHOICES = [
+        ("TEXT", "Text"),
+        ("FORM", "Form"),
+    ]
+
+    USER_TYPE_CHOICES = [
+        ("PATHOLOGIST", "Pathologist"),
+        ("RADIOLOGIST", "Radiologist"),
+    ]
+
+    GENDER_CHOICES = [
+        ("MALE", "Male"),
+        ("FEMALE", "Female"),
+        ("BOTH", "Both"),
     ]
 
     template_code = models.CharField(
@@ -31,16 +54,44 @@ class Template(models.Model):
     )
 
     template_for = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=TEMPLATE_FOR_CHOICES
     )
 
-    template_type = models.CharField(
-        max_length=20,
-        choices=TEMPLATE_TYPE_CHOICES
+    service_name = models.CharField(
+    max_length=255,
+    blank=True,
+    null=True
+   )
+
+    gender = models.CharField(
+        max_length=10,
+        choices=GENDER_CHOICES,
+        default="BOTH"
     )
 
+    user_type = models.CharField(
+        max_length=20,
+        choices=USER_TYPE_CHOICES,
+        null=True,
+        blank=True
+    )
+
+    template_format = models.CharField(
+    max_length=20,
+    choices=TEMPLATE_FORMAT_CHOICES,
+    null=True,
+    blank=True
+    )
+
+    # For TEXT templates
     template_text = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    # For FORM templates
+    template_json = models.JSONField(
         blank=True,
         null=True
     )
@@ -61,55 +112,11 @@ class Template(models.Model):
         auto_now=True
     )
 
+    
+
     class Meta:
         db_table = "templates"
-        ordering = ['-id']
+        ordering = ["-id"]
 
     def __str__(self):
         return self.template_name
-
-
-class TemplateParameter(models.Model):
-
-    template = models.ForeignKey(
-        Template,
-        on_delete=models.CASCADE,
-        related_name='template_parameters'
-    )
-
-    parameter = models.ForeignKey(
-        Parameter,
-        on_delete=models.CASCADE,
-        related_name='parameter_templates'
-    )
-
-    display_order = models.PositiveIntegerField(
-        default=1
-    )
-
-    is_required = models.BooleanField(
-        default=True
-    )
-
-    status = models.BooleanField(
-        default=True
-    )
-
-    is_deleted = models.BooleanField(
-        default=False
-    )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
-
-    class Meta:
-        db_table = "template_parameters"
-        ordering = ['display_order']
-
-    def __str__(self):
-        return f"{self.template.template_name} - {self.parameter.parameter_name}"

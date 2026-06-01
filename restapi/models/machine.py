@@ -3,17 +3,18 @@ from .clinic import Clinic
 import uuid
 
 class Machine(models.Model):
-    
-    uuid = models.UUIDField(
-    default=uuid.uuid4,
-    editable=False,
-    unique=True
-)
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
     clinic = models.ForeignKey(
-    Clinic,
-    on_delete=models.CASCADE,
-    related_name="machines"
-)
+        Clinic,
+        on_delete=models.CASCADE,
+        related_name="machines"
+    )
 
     machine_code = models.CharField(
         max_length=50,
@@ -22,6 +23,12 @@ class Machine(models.Model):
 
     machine_name = models.CharField(
         max_length=255
+    )
+
+    machine_parameters = models.ManyToManyField(
+        'MachineParameter',
+        related_name='machines',
+        blank=True
     )
 
     status = models.BooleanField(
@@ -39,11 +46,3 @@ class Machine(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True
     )
-
-    class Meta:
-        db_table = "machines"
-        ordering = ['-id']
-
-    def __str__(self):
-
-        return self.machine_name

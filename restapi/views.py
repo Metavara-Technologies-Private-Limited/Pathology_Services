@@ -1,4 +1,7 @@
-from django.shortcuts import render, get_object_or_404 
+from django.shortcuts import render, get_object_or_404
+from requests import request 
+from django.db.models import Q
+from restapi.pagination import StandardPagination
 from restapi.models.sample import Sample        
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -25,29 +28,42 @@ from restapi.services.pathology_profile_service import (
 from restapi.models.test_category import Category
 from restapi.serializers.test_category import CategorySerializer
 
-from restapi.models.test_template import (
-    Template,
-    TemplateParameter
-)
-from restapi.serializers.test_template import (
-    TemplateSerializer,
-    TemplateParameterSerializer
-)
-from restapi.services.test_template_service import (
-    TemplateService,
-    TemplateParameterService
-)
+from restapi.models.test_template import (Template)
+
+from restapi.serializers.test_template import (TemplateSerializer)
+
+from restapi.services.test_template_service import (TemplateService)
 
 # ==================================
-# Tube_(Master)_ViewSet
+# Sample_(Master)_ViewSet
 # ==================================
 
 class SampleViewSet(viewsets.ViewSet):
 
     def list(self, request):
+
+        search = request.GET.get("search")
         samples = sample_service.get_all_samples()
-        serializer = SampleSerializer(samples, many=True)
-        return Response(serializer.data)
+        if search:
+            samples = samples.filter(
+            Q(sample_code__icontains=search) |
+            Q(sample_name__icontains=search)
+         )
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        samples,
+        request
+     )
+
+        serializer = SampleSerializer(
+        page,
+        many=True
+     )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def create(self, request):
         serializer = SampleSerializer(data=request.data)
@@ -80,10 +96,32 @@ class SampleViewSet(viewsets.ViewSet):
 
 class TubeViewSet(ViewSet):
 
+    
     def list(self, request):
-        tubes = tube_service.get_all_tubes()
-        serializer = TubeSerializer(tubes, many=True)
-        return Response(serializer.data)
+      search = request.GET.get("search")
+
+      tubes = tube_service.get_all_tubes()
+
+      if search:
+        tubes = tubes.filter(
+        Q(tube_code__icontains=search) |
+        Q(tube_name__icontains=search)
+        )  
+      paginator = StandardPagination()
+
+      page = paginator.paginate_queryset(
+        tubes,
+        request
+     )
+
+      serializer = TubeSerializer(
+        page,
+        many=True
+     )
+
+      return paginator.get_paginated_response(
+        serializer.data
+     )
 
     def retrieve(self, request, pk=None):
         tube = get_object_or_404(Tube, pk=pk)
@@ -140,16 +178,36 @@ class ParameterViewSet(viewsets.ViewSet):
 
     def list(self, request):
 
+        search = request.GET.get("search")
+
+        if search:
+            parameters = parameters.filter(
+            Q(parameter_code__icontains=search) |
+            Q(parameter_name__icontains=search) |
+            Q(parameter_print_name__icontains=search) |
+            Q(unit__icontains=search)
+    )
+
+
         parameters = (
-            test_parameter_service.get_all_parameters()
-        )
+        test_parameter_service.get_all_parameters()
+     )
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        parameters,
+        request
+     )
 
         serializer = ParameterSerializer(
-            parameters,
-            many=True
-        )
-
-        return Response(serializer.data)
+        page,
+        many=True
+     )
+     
+        return paginator.get_paginated_response(
+        serializer.data
+     )
 
     def retrieve(self, request, pk=None):
 
@@ -229,14 +287,21 @@ class ParameterReferenceRangeViewSet(viewsets.ViewSet):
             test_parameter_service.get_all_reference_ranges()
         )
 
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                reference_ranges,
-                many=True
-            )
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        reference_ranges,
+        request
         )
 
-        return Response(serializer.data)
+        serializer = ParameterReferenceRangeSerializer(
+        page,
+        many=True
+        )
+
+        return paginator.get_paginated_response(
+        serializer.data
+        )
 
     def retrieve(self, request, pk=None):
 
@@ -321,9 +386,66 @@ class TemplateViewSet(ViewSet):
     def list(self, request):
 
         queryset = TemplateService.get_all()
-        serializer = TemplateSerializer(queryset, many=True)
 
-        return Response(serializer.data)
+        search = request.GET.get("search")
+
+        if search:
+            queryset = queryset.filter(
+            Q(template_name__icontains=search)
+        )
+            
+        from_date = request.GET.get("from_date")
+        to_date = request.GET.get("to_date")
+        template_for = request.GET.get("template_for")
+        gender = request.GET.get("gender")
+        user_type = request.GET.get("user_type")
+        template_format = request.GET.get("template_format")
+
+        if from_date:
+            queryset = queryset.filter(
+            created_at__date__gte=from_date
+        )
+
+        if to_date:
+            queryset = queryset.filter(
+            created_at__date__lte=to_date
+        )
+
+        if template_for:
+            queryset = queryset.filter(
+            template_for=template_for
+        )
+
+        if gender:
+            queryset = queryset.filter(
+            gender=gender
+        )
+
+        if user_type:
+            queryset = queryset.filter(
+            user_type=user_type
+        )
+
+        if template_format:
+            queryset = queryset.filter(
+            template_format=template_format
+        )
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+        )
+
+        serializer = TemplateSerializer(
+        page,
+        many=True
+        )
+
+        return paginator.get_paginated_response(
+        serializer.data
+        )
 
     def retrieve(self, request, pk=None):
 
@@ -409,113 +531,6 @@ class TemplateViewSet(ViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
 
-# ==================================
-# Template_Parameter_ViewSet
-# ==================================
-
-class TemplateParameterViewSet(ViewSet):
-
-    def list(self, request):
-
-        queryset = TemplateParameterService.get_all()
-
-        serializer = TemplateParameterSerializer(
-            queryset,
-            many=True
-        )
-
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-
-        instance = TemplateParameterService.get_by_id(pk)
-
-        if not instance:
-            return Response(
-                {"error": "Template Parameter not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = TemplateParameterSerializer(instance)
-
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = TemplateParameterSerializer(
-            data=request.data
-        )
-
-        if serializer.is_valid():
-
-            instance = TemplateParameterService.create(
-                serializer.validated_data
-            )
-
-            response_serializer = TemplateParameterSerializer(
-                instance
-            )
-
-            return Response(
-                response_serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def update(self, request, pk=None):
-
-        instance = TemplateParameterService.get_by_id(pk)
-
-        if not instance:
-            return Response(
-                {"error": "Template Parameter not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = TemplateParameterSerializer(
-            instance,
-            data=request.data
-        )
-
-        if serializer.is_valid():
-
-            updated_instance = TemplateParameterService.update(
-                instance,
-                serializer.validated_data
-            )
-
-            response_serializer = TemplateParameterSerializer(
-                updated_instance
-            )
-
-            return Response(response_serializer.data)
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def destroy(self, request, pk=None):
-
-        instance = TemplateParameterService.get_by_id(pk)
-
-        if not instance:
-            return Response(
-                {"error": "Template Parameter not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        TemplateParameterService.soft_delete(instance)
-
-        return Response(
-            {"message": "Template Parameter deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT
-        )
-    
 
 # ==================================
 # Test_ViewSet
@@ -528,14 +543,32 @@ class TestViewSet(ViewSet):
 
     def list(self, request):
 
-        queryset = TestService.get_all_tests()
+        search = request.GET.get("search")
 
-        serializer = TestSerializer(
-            queryset,
-            many=True
+        if search:
+            queryset = queryset.filter(
+            Q(test_code__icontains=search) |
+            Q(test_name__icontains=search) |
+            Q(print_name__icontains=search)
         )
 
-        return Response(serializer.data)
+        queryset = TestService.get_all_tests()
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+        )
+
+        serializer = TestSerializer(
+        page,
+        many=True
+        )
+
+        return paginator.get_paginated_response(
+        serializer.data
+        )
 
     def retrieve(self, request, pk=None):
 
@@ -627,9 +660,23 @@ class TestViewSet(ViewSet):
     
 class CategoryViewSet(ModelViewSet):
 
-    queryset = Category.objects.all().order_by('-id')
-
     serializer_class = CategorySerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+
+        queryset = Category.objects.all().order_by('-id')
+
+        search = self.request.GET.get("search")
+
+        if search:
+
+            queryset = queryset.filter(
+                Q(category_code__icontains=search) |
+                Q(category_name__icontains=search)
+            )
+
+        return queryset
 
 
 # ==================================
@@ -640,14 +687,30 @@ class PathologyProfileViewSet(ViewSet):
 
     def list(self, request):
 
-        queryset = PathologyProfileService.get_all_profiles()
+        search = request.GET.get("search")
 
-        serializer = PathologyProfileSerializer(
-            queryset,
-            many=True
+        if search:
+            queryset = queryset.filter(
+            Q(service_name__icontains=search)
         )
 
-        return Response(serializer.data)
+        queryset = PathologyProfileService.get_all_profiles()
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = PathologyProfileSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def retrieve(self, request, pk=None):
 
@@ -744,114 +807,6 @@ class PathologyProfileViewSet(ViewSet):
         )
     
 # ==================================
-# Agency_(Master)_ViewSet
-# ==================================
-
-class AgencyViewSet(ViewSet):
-
-    def list(self, request):
-
-        queryset = AgencyService.get_all_agencies()
-
-        serializer = AgencySerializer(
-            queryset,
-            many=True
-        )
-
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-
-        instance = AgencyService.get_agency_by_id(pk)
-
-        if not instance:
-            return Response(
-                {"error": "Agency not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = AgencySerializer(instance)
-
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = AgencySerializer(
-            data=request.data
-        )
-
-        if serializer.is_valid():
-
-            instance = AgencyService.create_agency(
-                serializer.validated_data
-            )
-
-            response_serializer = AgencySerializer(
-                instance
-            )
-
-            return Response(
-                response_serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def update(self, request, pk=None):
-
-        instance = AgencyService.get_agency_by_id(pk)
-
-        if not instance:
-            return Response(
-                {"error": "Agency not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = AgencySerializer(
-            instance,
-            data=request.data
-        )
-
-        if serializer.is_valid():
-
-            updated_instance = (
-                AgencyService.update_agency(
-                    instance,
-                    serializer.validated_data
-                )
-            )
-
-            response_serializer = AgencySerializer(
-                updated_instance
-            )
-
-            return Response(response_serializer.data)
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def destroy(self, request, pk=None):
-
-        instance = AgencyService.get_agency_by_id(pk)
-
-        if not instance:
-            return Response(
-                {"error": "Agency not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        AgencyService.delete_agency(instance)
-
-        return Response(
-            {"message": "Agency deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT
-        )
-# ==================================
 # Machine_(Master)_ViewSet
 # ==================================    
 
@@ -861,12 +816,30 @@ class MachineViewSet(ViewSet):
 
         queryset = MachineService.get_all_machines()
 
-        serializer = MachineSerializer(
-            queryset,
-            many=True
-        )
+        search = request.GET.get("search")
 
-        return Response(serializer.data)
+        if search:
+
+            queryset = queryset.filter(
+            Q(machine_code__icontains=search) |
+            Q(machine_name__icontains=search)
+        )
+        
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = MachineSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def retrieve(self, request, pk=None):
 
@@ -964,29 +937,30 @@ class MachineViewSet(ViewSet):
 # Machine_Parameter_ViewSet
 # ==================================
 
-from restapi.serializers.machine_parameter import (
-    MachineParameterSerializer
-)
-
-from restapi.services.machine_parameter_service import (
-    MachineParameterService
-)
+from restapi.serializers.machine_parameter import (MachineParameterSerializer)
+from restapi.services.machine_parameter_service import (MachineParameterService)
 
 class MachineParameterViewSet(ViewSet):
 
     def list(self, request):
 
-        queryset = (
-            MachineParameterService
-            .get_all_machine_parameters()
+        queryset = (MachineParameterService.get_all_machine_parameters())
+       
+        search = request.GET.get("search")
+        
+        if search:
+            queryset = queryset.filter(
+            Q(machine_parameter_code__icontains=search) |
+            Q(machine_parameter_name__icontains=search)
         )
 
-        serializer = MachineParameterSerializer(
-            queryset,
-            many=True
-        )
+        paginator = StandardPagination()
 
-        return Response(serializer.data)
+        page = paginator.paginate_queryset(queryset,request)
+
+        serializer = MachineParameterSerializer(page,many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def retrieve(self, request, pk=None):
 
@@ -1103,33 +1077,445 @@ class MachineParameterViewSet(ViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
     
+
+# ==================================
+# CLinic (Master)_ViewSet
+# ==================================
+
+from restapi.serializers.clinic import ClinicSerializer
+from restapi.services.clinic_service import ClinicService
+
+class ClinicViewSet(ViewSet):
+
+    def list(self, request):
+
+        queryset = ClinicService.get_all_clinics()
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = ClinicSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
+
+    def retrieve(self, request, pk=None):
+
+        instance = ClinicService.get_clinic_by_id(pk)
+
+        if not instance:
+
+            return Response(
+                {"error": "Clinic not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ClinicSerializer(instance)
+
+        return Response(serializer.data)
+
+    def create(self, request):
+
+        serializer = ClinicSerializer(
+            data=request.data
+        )
+
+        if serializer.is_valid():
+
+            instance = ClinicService.create_clinic(
+                serializer.validated_data
+            )
+
+            response_serializer = ClinicSerializer(
+                instance
+            )
+
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def update(self, request, pk=None):
+
+        instance = ClinicService.get_clinic_by_id(pk)
+
+        if not instance:
+
+            return Response(
+                {"error": "Clinic not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ClinicSerializer(
+            instance,
+            data=request.data
+        )
+
+        if serializer.is_valid():
+
+            updated_instance = (
+                ClinicService.update_clinic(
+                    instance,
+                    serializer.validated_data
+                )
+            )
+
+            response_serializer = ClinicSerializer(
+                updated_instance
+            )
+
+            return Response(
+                response_serializer.data
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def destroy(self, request, pk=None):
+
+        instance = ClinicService.get_clinic_by_id(pk)
+
+        if not instance:
+
+            return Response(
+                {"error": "Clinic not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        ClinicService.delete_clinic(instance)
+
+        return Response(
+            {"message": "Deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+    
+
+# ==================================
+# Agency (Master)_ViewSet
+# ==================================
+    
+from restapi.serializers.agency_clinic import (AgencyClinicSerializer)
+from restapi.services.agency_clinic_service import (AgencyClinicService)
+
+
+class AgencyViewSet(ViewSet):
+
+    def list(self, request):
+
+        queryset = AgencyService.get_all_agencies()
+        
+        search = request.GET.get("search")
+
+        if search:
+
+            queryset = queryset.filter(
+            Q(agency_code__icontains=search) |
+            Q(agency_name__icontains=search)
+        )
+            
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = AgencySerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
+
+    def retrieve(self, request, pk=None):
+
+        instance = AgencyService.get_agency_by_id(pk)
+
+        if not instance:
+            return Response(
+                {"error": "Agency not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = AgencySerializer(instance)
+
+        return Response(serializer.data)
+
+    def create(self, request):
+
+        serializer = AgencySerializer(
+            data=request.data
+        )
+
+        if serializer.is_valid():
+
+            instance = AgencyService.create_agency(
+                serializer.validated_data
+            )
+
+            response_serializer = AgencySerializer(
+                instance
+            )
+
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def update(self, request, pk=None):
+
+        instance = AgencyService.get_agency_by_id(pk)
+
+        if not instance:
+            return Response(
+                {"error": "Agency not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = AgencySerializer(
+            instance,
+            data=request.data
+        )
+
+        if serializer.is_valid():
+
+            updated_instance = (
+                AgencyService.update_agency(
+                    instance,
+                    serializer.validated_data
+                )
+            )
+
+            response_serializer = AgencySerializer(
+                updated_instance
+            )
+
+            return Response(response_serializer.data)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def destroy(self, request, pk=None):
+
+        instance = AgencyService.get_agency_by_id(pk)
+
+        if not instance:
+            return Response(
+                {"error": "Agency not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        AgencyService.delete_agency(instance)
+
+        return Response(
+            {"message": "Agency deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class AgencyClinicViewSet(ViewSet):
+
+    def list(self, request):
+
+        queryset = (AgencyClinicService.get_all())
+
+        search = request.GET.get("search")
+
+        if search:
+            queryset = queryset.filter(
+            Q(clinic__clinic_name__icontains=search)
+        )
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = AgencyClinicSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
+
+    def retrieve(self, request, pk=None):
+
+        instance = (
+            AgencyClinicService.get_by_id(pk)
+        )
+
+        if not instance:
+
+            return Response(
+                {"error": "Not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = (
+            AgencyClinicSerializer(instance)
+        )
+
+        return Response(serializer.data)
+
+    def create(self, request):
+
+        serializer = (
+            AgencyClinicSerializer(
+                data=request.data
+            )
+        )
+
+        if serializer.is_valid():
+
+            instance = (
+                AgencyClinicService.create(
+                    serializer.validated_data
+                )
+            )
+
+            response_serializer = (
+                AgencyClinicSerializer(instance)
+            )
+
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def update(self, request, pk=None):
+
+        instance = (
+            AgencyClinicService.get_by_id(pk)
+        )
+
+        if not instance:
+
+            return Response(
+                {"error": "Not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = (
+            AgencyClinicSerializer(
+                instance,
+                data=request.data
+            )
+        )
+
+        if serializer.is_valid():
+
+            updated_instance = (
+                AgencyClinicService.update(
+                    instance,
+                    serializer.validated_data
+                )
+            )
+
+            response_serializer = (
+                AgencyClinicSerializer(
+                    updated_instance
+                )
+            )
+
+            return Response(
+                response_serializer.data
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def destroy(self, request, pk=None):
+
+        instance = (
+            AgencyClinicService.get_by_id(pk)
+        )
+
+        if not instance:
+
+            return Response(
+                {"error": "Not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        AgencyClinicService.delete(instance)
+
+        return Response(
+            {"message": "Deleted successfully"},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
 # ==================================
 # Agency_Service_ViewSet
 # ==================================
 
-from restapi.serializers.agency_service import (
-    AgencyServiceSerializer
-)
-
-from restapi.services.agency_service_service import (
-    AgencyServiceService
-)
+from restapi.serializers.agency_service import (AgencyServiceSerializer)
+from restapi.services.agency_service_service import (AgencyServiceService)
 
 class AgencyServiceViewSet(ViewSet):
 
     def list(self, request):
 
-        queryset = (
-            AgencyServiceService
-            .get_all_agency_services()
+        queryset = (AgencyServiceService.get_all_agency_services())
+
+        search = request.GET.get("search")
+
+        if search:
+
+            queryset = queryset.filter(
+            Q(service__service_name__icontains=search)
         )
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
 
         serializer = AgencyServiceSerializer(
-            queryset,
-            many=True
-        )
+        page,
+        many=True
+    )
 
-        return Response(serializer.data)
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def retrieve(self, request, pk=None):
 
@@ -1246,266 +1632,6 @@ class AgencyServiceViewSet(ViewSet):
             status=status.HTTP_204_NO_CONTENT
         )
     
-# ==================================
-# CLinic (Master)_ViewSet
-# ==================================
-
-from restapi.serializers.clinic import ClinicSerializer
-from restapi.services.clinic_service import ClinicService
-
-class ClinicViewSet(ViewSet):
-
-    def list(self, request):
-
-        queryset = ClinicService.get_all_clinics()
-
-        serializer = ClinicSerializer(
-            queryset,
-            many=True
-        )
-
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-
-        instance = ClinicService.get_clinic_by_id(pk)
-
-        if not instance:
-
-            return Response(
-                {"error": "Clinic not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = ClinicSerializer(instance)
-
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = ClinicSerializer(
-            data=request.data
-        )
-
-        if serializer.is_valid():
-
-            instance = ClinicService.create_clinic(
-                serializer.validated_data
-            )
-
-            response_serializer = ClinicSerializer(
-                instance
-            )
-
-            return Response(
-                response_serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def update(self, request, pk=None):
-
-        instance = ClinicService.get_clinic_by_id(pk)
-
-        if not instance:
-
-            return Response(
-                {"error": "Clinic not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = ClinicSerializer(
-            instance,
-            data=request.data
-        )
-
-        if serializer.is_valid():
-
-            updated_instance = (
-                ClinicService.update_clinic(
-                    instance,
-                    serializer.validated_data
-                )
-            )
-
-            response_serializer = ClinicSerializer(
-                updated_instance
-            )
-
-            return Response(
-                response_serializer.data
-            )
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def destroy(self, request, pk=None):
-
-        instance = ClinicService.get_clinic_by_id(pk)
-
-        if not instance:
-
-            return Response(
-                {"error": "Clinic not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        ClinicService.delete_clinic(instance)
-
-        return Response(
-            {"message": "Deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT
-        )
-    
-
-# ==================================
-# Agency (Master)_ViewSet
-# ==================================
-    
-from restapi.serializers.agency_clinic import (
-    AgencyClinicSerializer
-)
-
-from restapi.services.agency_clinic_service import (
-    AgencyClinicService
-)
-
-
-class AgencyClinicViewSet(ViewSet):
-
-    def list(self, request):
-
-        queryset = (
-            AgencyClinicService.get_all()
-        )
-
-        serializer = (
-            AgencyClinicSerializer(
-                queryset,
-                many=True
-            )
-        )
-
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-
-        instance = (
-            AgencyClinicService.get_by_id(pk)
-        )
-
-        if not instance:
-
-            return Response(
-                {"error": "Not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = (
-            AgencyClinicSerializer(instance)
-        )
-
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = (
-            AgencyClinicSerializer(
-                data=request.data
-            )
-        )
-
-        if serializer.is_valid():
-
-            instance = (
-                AgencyClinicService.create(
-                    serializer.validated_data
-                )
-            )
-
-            response_serializer = (
-                AgencyClinicSerializer(instance)
-            )
-
-            return Response(
-                response_serializer.data,
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def update(self, request, pk=None):
-
-        instance = (
-            AgencyClinicService.get_by_id(pk)
-        )
-
-        if not instance:
-
-            return Response(
-                {"error": "Not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = (
-            AgencyClinicSerializer(
-                instance,
-                data=request.data
-            )
-        )
-
-        if serializer.is_valid():
-
-            updated_instance = (
-                AgencyClinicService.update(
-                    instance,
-                    serializer.validated_data
-                )
-            )
-
-            response_serializer = (
-                AgencyClinicSerializer(
-                    updated_instance
-                )
-            )
-
-            return Response(
-                response_serializer.data
-            )
-
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def destroy(self, request, pk=None):
-
-        instance = (
-            AgencyClinicService.get_by_id(pk)
-        )
-
-        if not instance:
-
-            return Response(
-                {"error": "Not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        AgencyClinicService.delete(instance)
-
-        return Response(
-            {"message": "Deleted successfully"},
-            status=status.HTTP_204_NO_CONTENT
-        )
 
 # ==================================
 # Test_Parameter_Link_ViewSet
@@ -1524,17 +1650,24 @@ class TestParameterLinkViewSet(ViewSet):
     def list(self, request):
 
         queryset = (
-            TestParameterLinkService.get_all()
-        )
+        TestParameterLinkService.get_all()
+    )
 
-        serializer = (
-            TestParameterLinkSerializer(
-                queryset,
-                many=True
-            )
-        )
+        paginator = StandardPagination()
 
-        return Response(serializer.data)
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = TestParameterLinkSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def retrieve(self, request, pk=None):
 
@@ -1670,17 +1803,24 @@ class TestSampleLinkViewSet(ViewSet):
     def list(self, request):
 
         queryset = (
-            TestSampleLinkService.get_all()
-        )
+        TestSampleLinkService.get_all()
+    )
 
-        serializer = (
-            TestSampleLinkSerializer(
-                queryset,
-                many=True
-            )
-        )
+        paginator = StandardPagination()
 
-        return Response(serializer.data)
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = TestSampleLinkSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def retrieve(self, request, pk=None):
 
@@ -1815,17 +1955,24 @@ class TestTemplateLinkViewSet(ViewSet):
     def list(self, request):
 
         queryset = (
-            TestTemplateLinkService.get_all()
-        )
+        TestTemplateLinkService.get_all()
+    )
 
-        serializer = (
-            TestTemplateLinkSerializer(
-                queryset,
-                many=True
-            )
-        )
+        paginator = StandardPagination()
 
-        return Response(serializer.data)
+        page = paginator.paginate_queryset(
+        queryset,
+        request
+    )
+
+        serializer = TestTemplateLinkSerializer(
+        page,
+        many=True
+    )
+
+        return paginator.get_paginated_response(
+        serializer.data
+    )
 
     def retrieve(self, request, pk=None):
 
@@ -2183,3 +2330,10 @@ class ActivityLogsView(APIView):
             })
 
         return Response(data)
+    
+
+# =========================================
+# FormulaValidation VIEW
+# =========================================
+
+

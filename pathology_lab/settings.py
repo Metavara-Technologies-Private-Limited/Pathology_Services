@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'restapi',
     'drf_spectacular',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +51,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
 ]
 
 ROOT_URLCONF = 'pathology_lab.urls'
@@ -79,7 +86,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pathology_db',
-        'USER': 'postgres',
+        'USER': 'pathology_user',
         'PASSWORD': 'Tiger123',
         'HOST': '72.62.227.137',
         'PORT': '5432',
