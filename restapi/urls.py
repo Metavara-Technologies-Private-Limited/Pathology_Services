@@ -129,14 +129,17 @@ from .views import (
     ActivityLogsView
 )
 
-urlpatterns = [
+urlpatterns = router.urls + [
 
     # Patient APIs
     path('patients/', PatientView.as_view(), name='patients'),
 
     # Pending Shipment APIs
     path('pending-shipment/', PendingShipmentView.as_view(), name='pending-shipment'),
-
+   
+    # ScheduleShipping
+    path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
+    
     # Move Pending → Shipped
     path('move-to-shipped/', MoveToShippedView.as_view(), name='move-to-shipped'),
 
@@ -152,6 +155,4 @@ urlpatterns = [
     # Activity Logs APIs
     path('activity-logs/', ActivityLogsView.as_view(), name='activity-logs'),
 
-    # ScheduleShipping
-    path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
 ]
