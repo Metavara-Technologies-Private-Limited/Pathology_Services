@@ -85,11 +85,11 @@ WSGI_APPLICATION = 'pathology_lab.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pathology_db',
-        'USER': 'pathology_user',
-        'PASSWORD': 'Tiger123',
-        'HOST': '72.62.227.137',
-        'PORT': '5432',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('POSTGRES_HOST'),
+        'PORT': os.getenv('POSTGRES_PORT'),
     }
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
