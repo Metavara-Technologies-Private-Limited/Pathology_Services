@@ -2655,3 +2655,4 @@ class ShipmentReceivedCreateAPIView(APIView):
                 {"error": "Internal Server Error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+ #Added Receive section views

@@ -1,3 +1,4 @@
+#Serilizer for Receive section
 from rest_framework import serializers
 from restapi.models.receive_model import ReceiveSample
 
