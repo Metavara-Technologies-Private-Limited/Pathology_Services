@@ -1,6 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from restapi.views import *
 from django.urls import path
+
 from restapi.views import (
     SampleViewSet,
     TubeViewSet,
@@ -21,7 +22,6 @@ from restapi.views import (
     TestTemplateLinkViewSet
 )
 
-
 router = DefaultRouter()
 
 router.register(r'samples', SampleViewSet, basename='samples')
@@ -40,11 +40,13 @@ router.register(
     TemplateViewSet,
     basename='templates'
 )
+
 router.register(
     r'tests',
     TestViewSet,
     basename='tests'
 )
+
 router.register(
     r'categories',
     CategoryViewSet,
@@ -86,6 +88,7 @@ router.register(
     ClinicViewSet,
     basename='clinics'
 )
+
 router.register(
     r'agency-clinics',
     AgencyClinicViewSet,
@@ -109,12 +112,12 @@ router.register(
     TestTemplateLinkViewSet,
     basename='test-template-links'
 )
+
 urlpatterns = router.urls
 
 
-
-
 from django.urls import path
+
 from .views import (
     PatientView,
     PendingShipmentView,
@@ -123,32 +126,133 @@ from .views import (
     ShipmentShippedView,
     MoveToReceivedView,
     ShipmentReceivedView,
-    ActivityLogsView
+    ActivityLogsView,
+
+    # RECEIVE MODULE IMPORTS
+    ReceiveSampleCreateAPIView,
+    ReceiveSampleListAPIView,
+    ReceiveSampleAPIView,
+    RejectSampleAPIView,
+    ReceiveActivityLogsAPIView,
+    DeleteSampleAPIView,
+    ActiveSamplesAPIView,
+    DeletedSamplesAPIView,
+    ShipmentReceivedCreateAPIView,
 )
 
 urlpatterns = router.urls + [
 
     # Patient APIs
-    path('patients/', PatientView.as_view(), name='patients'),
+    path(
+        'patients/',
+        PatientView.as_view(),
+        name='patients'
+    ),
 
     # Pending Shipment APIs
-    path('pending-shipment/', PendingShipmentView.as_view(), name='pending-shipment'),
+    path(
+        'pending-shipment/',
+        PendingShipmentView.as_view(),
+        name='pending-shipment'
+    ),
 
     # Move Pending → Shipped
-    path('move-to-shipped/', MoveToShippedView.as_view(), name='move-to-shipped'),
+    path(
+        'move-to-shipped/',
+        MoveToShippedView.as_view(),
+        name='move-to-shipped'
+    ),
 
     # Shipped Shipment APIs
-    path('shipped-shipment/', ShipmentShippedView.as_view(), name='shipped-shipment'),
+    path(
+        'shipped-shipment/',
+        ShipmentShippedView.as_view(),
+        name='shipped-shipment'
+    ),
 
     # Move Shipped → Received
-    path('move-to-received/', MoveToReceivedView.as_view(), name='move-to-received'),
+    path(
+        'move-to-received/',
+        MoveToReceivedView.as_view(),
+        name='move-to-received'
+    ),
 
     # Received Shipment APIs
-    path('received-shipment/', ShipmentReceivedView.as_view(), name='received-shipment'),
+    path(
+        'received-shipment/',
+        ShipmentReceivedView.as_view(),
+        name='received-shipment'
+    ),
 
     # Activity Logs APIs
-    path('activity-logs/', ActivityLogsView.as_view(), name='activity-logs'),
+    path(
+        'activity-logs/',
+        ActivityLogsView.as_view(),
+        name='activity-logs'
+    ),
 
     # ScheduleShipping
-    path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
+    path(
+        'schedule-shipping/',
+        ScheduleShippingView.as_view(),
+        name='schedule-shipping'
+    ),
+
+    # =====================================================
+    # RECEIVE MODULE APIS
+    # =====================================================
+
+    path(
+        "create-sample/",
+        ReceiveSampleCreateAPIView.as_view(),
+        name="create-sample"
+    ),
+
+    path(
+        "samples/",
+        ReceiveSampleListAPIView.as_view(),
+        name="sample-list"
+    ),
+
+    path(
+        "receive-sample/<int:sample_id>/",
+        ReceiveSampleAPIView.as_view(),
+        name="receive-sample"
+    ),
+
+    path(
+        "reject-sample/<int:sample_id>/",
+        RejectSampleAPIView.as_view(),
+        name="reject-sample"
+    ),
+
+    path(
+        "receive-activity-logs/",
+        ReceiveActivityLogsAPIView.as_view(),
+        name="receive-activity-logs"
+    ),
+
+    path(
+        "delete-sample/<int:sample_id>/",
+        DeleteSampleAPIView.as_view(),
+        name="delete-sample"
+    ),
+
+    path(
+        "active-samples/",
+        ActiveSamplesAPIView.as_view(),
+        name="active-samples"
+    ),
+
+    path(
+        "deleted-samples/",
+        DeletedSamplesAPIView.as_view(),
+        name="deleted-samples"
+    ),
+
+    path(
+        "create-shipment-received/",
+        ShipmentReceivedCreateAPIView.as_view(),
+        name="create-shipment-received"
+    ),
 ]
