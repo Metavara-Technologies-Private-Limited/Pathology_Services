@@ -57,6 +57,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:5174",
 ]
 
 ROOT_URLCONF = 'pathology_lab.urls'
@@ -86,11 +87,11 @@ import os
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': os.getenv('POSTGRES_PORT'),
+        'NAME': os.getenv('POSTGRES_DB', 'pathology_db_1'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'ramashi53'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
