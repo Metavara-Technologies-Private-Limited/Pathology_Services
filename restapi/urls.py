@@ -256,3 +256,4 @@ urlpatterns = router.urls + [
         name="create-shipment-received"
     ),
 ]
+#Added Receive section APIs

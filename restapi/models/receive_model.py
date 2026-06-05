@@ -1,3 +1,4 @@
+# Receive section model
 from django.db import models
 from .shipment_received import ShipmentReceived
 
