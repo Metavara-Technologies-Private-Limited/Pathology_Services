@@ -9,6 +9,7 @@ from restapi.serializers.sample import SampleSerializer
 from restapi.services import sample_service
 from rest_framework.viewsets import ViewSet
 from restapi.models import Tube
+from restapi.models.receive_model import ReceiveSample
 from restapi.serializers.tube import TubeSerializer
 from restapi.services import tube_service
 from rest_framework import status
@@ -1967,13 +1968,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .services.services import (
+from .services.shipment_services import (
     create_patient,
     get_all_patients,
-    get_patient_by_id,
     create_pending_shipment,
     get_all_pending_shipments,
-    get_pending_by_id,
     create_schedule_shipping,
     get_all_schedule_shipping,
     move_to_shipped,
@@ -1981,12 +1980,10 @@ from .services.services import (
     move_to_received,
     get_all_received_shipments,
     get_all_activity_logs,
-    create_manual_activity_log
 )
 
-
 # =========================================
-# PATIENT VIEWS
+# PATIENT VIEW
 # =========================================
 
 class PatientView(APIView):
@@ -2008,27 +2005,34 @@ class PatientView(APIView):
         return Response(data)
 
     def post(self, request):
+
         patient = create_patient(request.data)
 
-        return Response({
-            "message": "Patient created successfully",
-            "id": patient.id
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Patient created successfully",
+                "id": patient.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
-# PENDING SHIPMENT VIEWS
+# PENDING SHIPMENT VIEW
 # =========================================
 
 class PendingShipmentView(APIView):
 
     def get(self, request):
-        pendings = get_all_pending_shipments()
+
+        shipments = get_all_pending_shipments()
 
         data = []
-        for item in pendings:
+
+        for item in shipments:
             data.append({
                 "id": item.id,
+                "order_date": item.order_date,
                 "sample_no": item.sample_no,
                 "sample_type": item.sample_type,
                 "test_code": item.test_code,
@@ -2040,17 +2044,20 @@ class PendingShipmentView(APIView):
         return Response(data)
 
     def post(self, request):
-        pending = create_pending_shipment(request.data)
 
-        return Response({
-            "message": "Pending Shipment created successfully",
-            "id": pending.id
-        }, status=status.HTTP_201_CREATED)
-    
+        shipment = create_pending_shipment(request.data)
+
+        return Response(
+            {
+                "message": "Pending shipment created successfully",
+                "id": shipment.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
-# ScheduleShippingView
+# SCHEDULE SHIPPING VIEW
 # =========================================
 
 class ScheduleShippingView(APIView):
@@ -2062,13 +2069,10 @@ class ScheduleShippingView(APIView):
         data = []
 
         for item in schedules:
-
             data.append({
                 "id": item.id,
                 "pending_id": item.pending.id,
                 "sample_no": item.pending.sample_no,
-                "sample_type": item.pending.sample_type,
-                "test_name": item.pending.test_name,
                 "patient": item.pending.patient.patient_name,
                 "ship_date": item.ship_date,
                 "ship_time": item.ship_time,
@@ -2080,14 +2084,15 @@ class ScheduleShippingView(APIView):
 
     def post(self, request):
 
-        schedule = create_schedule_shipping(
-            request.data
-        )
+        schedule = create_schedule_shipping(request.data)
 
-        return Response({
-            "message": "Schedule Shipping created successfully",
-            "id": schedule.id
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Schedule shipping created successfully",
+                "id": schedule.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
@@ -2097,6 +2102,7 @@ class ScheduleShippingView(APIView):
 class MoveToShippedView(APIView):
 
     def post(self, request):
+
         pending_id = request.data.get("pending_id")
         ship_to = request.data.get("ship_to")
         ship_by = request.data.get("ship_by")
@@ -2107,10 +2113,13 @@ class MoveToShippedView(APIView):
             ship_by
         )
 
-        return Response({
-            "message": "Shipment moved to shipped successfully",
-            "shipment_no": shipped.shipment_no
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Shipment moved to shipped",
+                "shipment_no": shipped.shipment_no
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
@@ -2120,9 +2129,11 @@ class MoveToShippedView(APIView):
 class ShipmentShippedView(APIView):
 
     def get(self, request):
+
         shipments = get_all_shipped_shipments()
 
         data = []
+
         for item in shipments:
             data.append({
                 "id": item.id,
@@ -2143,6 +2154,7 @@ class ShipmentShippedView(APIView):
 class MoveToReceivedView(APIView):
 
     def post(self, request):
+
         shipped_id = request.data.get("shipped_id")
         status_value = request.data.get("status")
         result_value = request.data.get("result")
@@ -2153,10 +2165,13 @@ class MoveToReceivedView(APIView):
             result_value
         )
 
-        return Response({
-            "message": "Shipment moved to received successfully",
-            "received_no": received.received_no
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Shipment moved to received",
+                "received_no": received.received_no
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
@@ -2166,10 +2181,12 @@ class MoveToReceivedView(APIView):
 class ShipmentReceivedView(APIView):
 
     def get(self, request):
-        receiveds = get_all_received_shipments()
+
+        received_shipments = get_all_received_shipments()
 
         data = []
-        for item in receiveds:
+
+        for item in received_shipments:
             data.append({
                 "id": item.id,
                 "received_no": item.received_no,
@@ -2187,7 +2204,9 @@ class ShipmentReceivedView(APIView):
 # =========================================
 
 class ActivityLogsView(APIView):
+
     def get(self, request):
+
         logs = get_all_activity_logs()
 
         data = []
@@ -2195,13 +2214,14 @@ class ActivityLogsView(APIView):
         for log in logs:
             data.append({
                 "id": log.id,
-                "ship_no": log.shipped_shipment.shipment_no if log.shipped_shipment else None,
+                "shipment_no": log.shipped_shipment.shipment_no if log.shipped_shipment else None,
                 "ship_from": log.ship_from,
                 "ship_to": log.ship_to,
                 "ship_by": log.ship_by,
-                "ship_date_time": log.ship_date_time,
+                "ship_date_time": log.ship_date_time
             })
 
+        return Response(data)
         return Response(data)
     
 
@@ -2209,4 +2229,344 @@ class ActivityLogsView(APIView):
 # FormulaValidation VIEW
 # =========================================
 
+# =====================================================
+# RECEIVE MODULE IMPORTS
+# =====================================================
 
+import logging
+import traceback
+
+from rest_framework.exceptions import ValidationError
+
+from django.utils.timezone import now
+from django.forms.models import model_to_dict
+
+from restapi.models.receive_model import ReceiveSample
+from restapi.serializers.receive_serializer import ReceiveSampleSerializer
+from restapi.models.shipment_received import ShipmentReceived
+
+
+logger = logging.getLogger(__name__)
+
+
+def get_receive_sample_or_404(sample_id):
+    return get_object_or_404(ReceiveSample, id=sample_id)
+
+
+# =====================================================
+# CREATE SAMPLE API
+# =====================================================
+
+class ReceiveSampleCreateAPIView(APIView):
+
+    def post(self, request):
+        try:
+            serializer = ReceiveSampleSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            sample = serializer.save(status="Shipped")
+
+            return Response(
+                {
+                    "message": "Sample created successfully",
+                    "data": ReceiveSampleSerializer(sample).data
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except ValidationError as ve:
+            return Response(
+                {"error": ve.detail},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# LIST + SEARCH API
+# =====================================================
+
+class ReceiveSampleListAPIView(APIView):
+
+    def get(self, request):
+        try:
+            search = request.GET.get("search", "")
+            status_value = request.GET.get("status")
+
+            queryset = ReceiveSample.objects.filter(is_deleted=False)
+
+            if status_value:
+                queryset = queryset.filter(status=status_value)
+
+            if search:
+                queryset = queryset.filter(
+                    Q(patient_name__icontains=search) |
+                    Q(specimen_no__icontains=search) |
+                    Q(shipment_no__icontains=search) |
+                    Q(test_name__icontains=search)
+                )
+
+            serializer = ReceiveSampleSerializer(queryset, many=True)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# RECEIVE SAMPLE API
+# =====================================================
+
+class ReceiveSampleAPIView(APIView):
+
+    def post(self, request, sample_id):
+        try:
+            sample = get_receive_sample_or_404(sample_id)
+
+            sample.receive_date = request.data.get("receive_date")
+            sample.receive_time = request.data.get("receive_time")
+            sample.accepted_by = request.data.get("accepted_by")
+            sample.remark = request.data.get("remark")
+            sample.sub_optimal = request.data.get("sub_optimal", False)
+            sample.shipment_received_id = request.data.get("shipment_received")
+            sample.status = "Received"
+
+            sample.save()
+
+            serializer = ReceiveSampleSerializer(sample)
+
+            return Response(
+                {
+                    "message": "Sample received successfully",
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Sample not found or Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# REJECT SAMPLE API
+# =====================================================
+
+class RejectSampleAPIView(APIView):
+
+    def post(self, request, sample_id):
+        try:
+            sample = get_receive_sample_or_404(sample_id)
+
+            sample.receive_date = request.data.get("receive_date")
+            sample.receive_time = request.data.get("receive_time")
+            sample.accepted_by = None
+            sample.rejected_by = request.data.get("rejected_by")
+            sample.remark = request.data.get("remark")
+            sample.resend_new_sample = request.data.get("resend_new_sample", False)
+            sample.sub_optimal = False
+            sample.status = "Rejected"
+
+            sample.save()
+
+            serializer = ReceiveSampleSerializer(sample)
+
+            return Response(
+                {
+                    "message": "Sample rejected successfully",
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Sample not found or Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# ACTIVITY LOGS API
+# =====================================================
+
+class ReceiveActivityLogsAPIView(APIView):
+
+    def get(self, request):
+        try:
+            queryset = ReceiveSample.objects.filter(
+                status__in=["Received", "Rejected"]
+            ).order_by("-id")
+
+            serializer = ReceiveSampleSerializer(queryset, many=True)
+
+            return Response(
+                {
+                    "message": "Activity logs fetched successfully",
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# SOFT DELETE SAMPLE API
+# =====================================================
+
+class DeleteSampleAPIView(APIView):
+
+    def delete(self, request, sample_id):
+        try:
+            sample = get_receive_sample_or_404(sample_id)
+
+            sample.is_deleted = True
+            sample.deleted_at = now()
+            sample.save()
+
+            return Response(
+                {"message": "Sample deleted successfully"},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Sample not found or Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# ACTIVE SAMPLES API
+# =====================================================
+
+class ActiveSamplesAPIView(APIView):
+
+    def get(self, request):
+        try:
+            queryset = ReceiveSample.objects.filter(
+                is_deleted=False
+            ).order_by("-id")
+
+            serializer = ReceiveSampleSerializer(queryset, many=True)
+
+            return Response(
+                {
+                    "message": "Active samples fetched successfully",
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# DELETED SAMPLES API
+# =====================================================
+
+class DeletedSamplesAPIView(APIView):
+
+    def get(self, request):
+        try:
+            queryset = ReceiveSample.objects.filter(
+                is_deleted=True
+            ).order_by("-id")
+
+            serializer = ReceiveSampleSerializer(queryset, many=True)
+
+            return Response(
+                {
+                    "message": "Deleted samples fetched successfully",
+                    "data": serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# =====================================================
+# CREATE SHIPMENT RECEIVED API
+# =====================================================
+
+class ShipmentReceivedCreateAPIView(APIView):
+
+    def post(self, request):
+        try:
+            shipment = ShipmentReceived.objects.create(
+                receive_date=request.data.get("receive_date"),
+                received_no=request.data.get("received_no"),
+                status=request.data.get("status"),
+                result=request.data.get("result")
+            )
+
+            return Response(
+                {
+                    "message": "Shipment received created successfully",
+                    "data": model_to_dict(shipment)
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+# Added Receive section views
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
+from restapi.services.pathology_order_service import PathologyOrderService
+
+class PathologyOrdersAPIView(APIView):
+
+    def get(self, request):
+
+        try:
+
+            data = PathologyOrderService.get_orders()
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
