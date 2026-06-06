@@ -11,10 +11,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -82,16 +85,15 @@ WSGI_APPLICATION = 'pathology_lab.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-import os
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pathology_db',
-        'USER': 'pathology_user',
-        'PASSWORD': 'Tiger123',
-        'HOST': '72.62.227.137',
-        'PORT': '5432',
+        'NAME': os.getenv('POSTGRES_DB', 'pathology_db_1'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'ramashi53'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -138,3 +140,8 @@ REST_FRAMEWORK = {
     'drf_spectacular.openapi.AutoSchema',
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EXTERNAL_LOGIN_URL = os.getenv("EXTERNAL_LOGIN_URL")
+EXTERNAL_USERNAME = os.getenv("EXTERNAL_USERNAME")
+EXTERNAL_PASSWORD = os.getenv("EXTERNAL_PASSWORD")
+ORDERS_URL = os.getenv("ORDERS_URL")
