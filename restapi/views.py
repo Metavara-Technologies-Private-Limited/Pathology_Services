@@ -2095,13 +2095,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .services.services import (
+from .services.shipment_services import (
     create_patient,
     get_all_patients,
-    get_patient_by_id,
     create_pending_shipment,
     get_all_pending_shipments,
-    get_pending_by_id,
     create_schedule_shipping,
     get_all_schedule_shipping,
     move_to_shipped,
@@ -2109,12 +2107,10 @@ from .services.services import (
     move_to_received,
     get_all_received_shipments,
     get_all_activity_logs,
-    create_manual_activity_log
 )
 
-
 # =========================================
-# PATIENT VIEWS
+# PATIENT VIEW
 # =========================================
 
 class PatientView(APIView):
@@ -2136,27 +2132,34 @@ class PatientView(APIView):
         return Response(data)
 
     def post(self, request):
+
         patient = create_patient(request.data)
 
-        return Response({
-            "message": "Patient created successfully",
-            "id": patient.id
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Patient created successfully",
+                "id": patient.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
-# PENDING SHIPMENT VIEWS
+# PENDING SHIPMENT VIEW
 # =========================================
 
 class PendingShipmentView(APIView):
 
     def get(self, request):
-        pendings = get_all_pending_shipments()
+
+        shipments = get_all_pending_shipments()
 
         data = []
-        for item in pendings:
+
+        for item in shipments:
             data.append({
                 "id": item.id,
+                "order_date": item.order_date,
                 "sample_no": item.sample_no,
                 "sample_type": item.sample_type,
                 "test_code": item.test_code,
@@ -2168,17 +2171,20 @@ class PendingShipmentView(APIView):
         return Response(data)
 
     def post(self, request):
-        pending = create_pending_shipment(request.data)
 
-        return Response({
-            "message": "Pending Shipment created successfully",
-            "id": pending.id
-        }, status=status.HTTP_201_CREATED)
-    
+        shipment = create_pending_shipment(request.data)
+
+        return Response(
+            {
+                "message": "Pending shipment created successfully",
+                "id": shipment.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
-# ScheduleShippingView
+# SCHEDULE SHIPPING VIEW
 # =========================================
 
 class ScheduleShippingView(APIView):
@@ -2190,13 +2196,10 @@ class ScheduleShippingView(APIView):
         data = []
 
         for item in schedules:
-
             data.append({
                 "id": item.id,
                 "pending_id": item.pending.id,
                 "sample_no": item.pending.sample_no,
-                "sample_type": item.pending.sample_type,
-                "test_name": item.pending.test_name,
                 "patient": item.pending.patient.patient_name,
                 "ship_date": item.ship_date,
                 "ship_time": item.ship_time,
@@ -2208,14 +2211,15 @@ class ScheduleShippingView(APIView):
 
     def post(self, request):
 
-        schedule = create_schedule_shipping(
-            request.data
-        )
+        schedule = create_schedule_shipping(request.data)
 
-        return Response({
-            "message": "Schedule Shipping created successfully",
-            "id": schedule.id
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Schedule shipping created successfully",
+                "id": schedule.id
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
@@ -2225,6 +2229,7 @@ class ScheduleShippingView(APIView):
 class MoveToShippedView(APIView):
 
     def post(self, request):
+
         pending_id = request.data.get("pending_id")
         ship_to = request.data.get("ship_to")
         ship_by = request.data.get("ship_by")
@@ -2235,10 +2240,13 @@ class MoveToShippedView(APIView):
             ship_by
         )
 
-        return Response({
-            "message": "Shipment moved to shipped successfully",
-            "shipment_no": shipped.shipment_no
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Shipment moved to shipped",
+                "shipment_no": shipped.shipment_no
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
@@ -2248,9 +2256,11 @@ class MoveToShippedView(APIView):
 class ShipmentShippedView(APIView):
 
     def get(self, request):
+
         shipments = get_all_shipped_shipments()
 
         data = []
+
         for item in shipments:
             data.append({
                 "id": item.id,
@@ -2271,6 +2281,7 @@ class ShipmentShippedView(APIView):
 class MoveToReceivedView(APIView):
 
     def post(self, request):
+
         shipped_id = request.data.get("shipped_id")
         status_value = request.data.get("status")
         result_value = request.data.get("result")
@@ -2281,10 +2292,13 @@ class MoveToReceivedView(APIView):
             result_value
         )
 
-        return Response({
-            "message": "Shipment moved to received successfully",
-            "received_no": received.received_no
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Shipment moved to received",
+                "received_no": received.received_no
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 # =========================================
@@ -2294,10 +2308,12 @@ class MoveToReceivedView(APIView):
 class ShipmentReceivedView(APIView):
 
     def get(self, request):
-        receiveds = get_all_received_shipments()
+
+        received_shipments = get_all_received_shipments()
 
         data = []
-        for item in receiveds:
+
+        for item in received_shipments:
             data.append({
                 "id": item.id,
                 "received_no": item.received_no,
@@ -2315,7 +2331,9 @@ class ShipmentReceivedView(APIView):
 # =========================================
 
 class ActivityLogsView(APIView):
+
     def get(self, request):
+
         logs = get_all_activity_logs()
 
         data = []
@@ -2323,13 +2341,14 @@ class ActivityLogsView(APIView):
         for log in logs:
             data.append({
                 "id": log.id,
-                "ship_no": log.shipped_shipment.shipment_no if log.shipped_shipment else None,
+                "shipment_no": log.shipped_shipment.shipment_no if log.shipped_shipment else None,
                 "ship_from": log.ship_from,
                 "ship_to": log.ship_to,
                 "ship_by": log.ship_by,
-                "ship_date_time": log.ship_date_time,
+                "ship_date_time": log.ship_date_time
             })
 
+        return Response(data)
         return Response(data)
     
 

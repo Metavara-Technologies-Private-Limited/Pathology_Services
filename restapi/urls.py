@@ -150,6 +150,11 @@ urlpatterns = router.urls + [
     ),
 
     # Pending Shipment APIs
+    path('pending-shipment/', PendingShipmentView.as_view(), name='pending-shipment'),
+   
+    # ScheduleShipping
+    path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
+    
     path(
         'pending-shipment/',
         PendingShipmentView.as_view(),
