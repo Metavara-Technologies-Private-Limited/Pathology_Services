@@ -2368,7 +2368,7 @@ from rest_framework.exceptions import ValidationError
 from django.utils.timezone import now
 from django.forms.models import model_to_dict
 
-from restapi.models import ReceiveSample
+from restapi.models.receive_model import ReceiveSample
 from restapi.serializers.receive_serializer import ReceiveSampleSerializer
 from restapi.models.shipment_received import ShipmentReceived
 

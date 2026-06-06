@@ -87,11 +87,11 @@ import os
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'pathology_db_1'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'ramashi53'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'NAME': 'pathology_db',
+        'USER': 'pathology_user',
+        'PASSWORD': 'Tiger123',
+        'HOST': '72.62.227.137',
+        'PORT': '5432',
     }
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
