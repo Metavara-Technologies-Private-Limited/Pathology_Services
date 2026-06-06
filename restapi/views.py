@@ -2674,4 +2674,26 @@ class ShipmentReceivedCreateAPIView(APIView):
                 {"error": "Internal Server Error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
- #Added Receive section views
+# Added Receive section views
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
+from restapi.services.pathology_order_service import PathologyOrderService
+
+class PathologyOrdersAPIView(APIView):
+
+    def get(self, request):
+
+        try:
+
+            data = PathologyOrderService.get_orders()
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -138,6 +138,7 @@ from .views import (
     ActiveSamplesAPIView,
     DeletedSamplesAPIView,
     ShipmentReceivedCreateAPIView,
+    PathologyOrdersAPIView,
 )
 
 urlpatterns = router.urls + [
@@ -259,6 +260,12 @@ urlpatterns = router.urls + [
         "create-shipment-received/",
         ShipmentReceivedCreateAPIView.as_view(),
         name="create-shipment-received"
+    ),
+
+    path(
+        "pathology-orders/",
+        PathologyOrdersAPIView.as_view(),
+        name="pathology-orders"
     ),
 ]
 #Added Receive section APIs
