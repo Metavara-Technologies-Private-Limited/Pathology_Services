@@ -6,7 +6,6 @@ from restapi.views import (
     SampleViewSet,
     TubeViewSet,
     ParameterViewSet,
-    ParameterReferenceRangeViewSet,
     TemplateViewSet,
     TestViewSet,
     CategoryViewSet,
@@ -28,12 +27,6 @@ router.register(r'samples', SampleViewSet, basename='samples')
 router.register(r'tubes', TubeViewSet, basename='tubes')
 
 router.register(r'parameters', ParameterViewSet, basename='parameters')
-
-router.register(
-    r'parameter-reference-ranges',
-    ParameterReferenceRangeViewSet,
-    basename='parameter-reference-ranges'
-)
 
 router.register(
     r'templates',

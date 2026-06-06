@@ -20,19 +20,12 @@ from restapi.services.agency_service import AgencyService
 from rest_framework.viewsets import ModelViewSet
 from restapi.serializers.machine import MachineSerializer
 from restapi.services.machine_service import MachineService
-from restapi.serializers.pathology_profile import (
-    PathologyProfileSerializer
-)
-from restapi.services.pathology_profile_service import (
-    PathologyProfileService
-)
+from restapi.serializers.pathology_profile import (PathologyProfileSerializer)
+from restapi.services.pathology_profile_service import (PathologyProfileService)
 from restapi.models.test_category import Category
 from restapi.serializers.test_category import CategorySerializer
-
 from restapi.models.test_template import (Template)
-
 from restapi.serializers.test_template import (TemplateSerializer)
-
 from restapi.services.test_template_service import (TemplateService)
 
 # ==================================
@@ -221,7 +214,7 @@ class ParameterViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    def create(self, request):
+    def create(self, request): 
 
         serializer = ParameterSerializer(
             data=request.data
@@ -275,108 +268,6 @@ class ParameterViewSet(viewsets.ViewSet):
 
         return Response(status=204)
 
-
-# ==================================
-# Parameter_ReferenceRange_ViewSet
-# ==================================
-
-class ParameterReferenceRangeViewSet(viewsets.ViewSet):
-
-    def list(self, request):
-
-        reference_ranges = (
-            test_parameter_service.get_all_reference_ranges()
-        )
-
-        paginator = StandardPagination()
-
-        page = paginator.paginate_queryset(
-        reference_ranges,
-        request
-        )
-
-        serializer = ParameterReferenceRangeSerializer(
-        page,
-        many=True
-        )
-
-        return paginator.get_paginated_response(
-        serializer.data
-        )
-
-    def retrieve(self, request, pk=None):
-
-        reference_range = get_object_or_404(
-            ParameterReferenceRange,
-            pk=pk
-        )
-
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                reference_range
-            )
-        )
-
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                data=request.data
-            )
-        )
-
-        if serializer.is_valid():
-
-            serializer.save()
-
-            return Response(
-                serializer.data,
-                status=201
-            )
-
-        return Response(
-            serializer.errors,
-            status=400
-        )
-
-    def update(self, request, pk=None):
-
-        reference_range = get_object_or_404(
-            ParameterReferenceRange,
-            pk=pk
-        )
-
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                reference_range,
-                data=request.data
-            )
-        )
-
-        if serializer.is_valid():
-
-            serializer.save()
-
-            return Response(serializer.data)
-
-        return Response(
-            serializer.errors,
-            status=400
-        )
-
-    def destroy(self, request, pk=None):
-
-        reference_range = get_object_or_404(
-            ParameterReferenceRange,
-            pk=pk
-        )
-
-        reference_range.delete()
-
-        return Response(status=204)
-    
 
 # ==================================
 # Template_Master_ViewSet
@@ -593,14 +484,10 @@ class TestViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            instance = TestService.create_test(
-                serializer.validated_data
-            )
-
-            response_serializer = TestSerializer(instance)
+            serializer.save()
 
             return Response(
-                response_serializer.data,
+                serializer.data,
                 status=status.HTTP_201_CREATED
             )
 
@@ -626,21 +513,14 @@ class TestViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            updated_instance = TestService.update_test(
-                instance,
-                serializer.validated_data
-            )
+            serializer.save()
 
-            response_serializer = TestSerializer(
-                updated_instance
-            )
-
-            return Response(response_serializer.data)
+            return Response(serializer.data)
 
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
-        )
+            )
 
     def destroy(self, request, pk=None):
 
@@ -1267,9 +1147,7 @@ class AgencyViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            instance = AgencyService.create_agency(
-                serializer.validated_data
-            )
+            instance = serializer.save()
 
             response_serializer = AgencySerializer(
                 instance
@@ -1302,12 +1180,7 @@ class AgencyViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            updated_instance = (
-                AgencyService.update_agency(
-                    instance,
-                    serializer.validated_data
-                )
-            )
+            updated_instance = serializer.save()
 
             response_serializer = AgencySerializer(
                 updated_instance
