@@ -161,7 +161,7 @@ class UpdateCollectionStatusSerializer(serializers.Serializer):
 
 
 class ChangeCollectionAgencySerializer(serializers.Serializer):
-    new_agency_id = serializers.IntegerField()
+    new_agency_id = serializers.UUIDField()
     reason = serializers.CharField(max_length=500)
 
     def validate_reason(self, value):
