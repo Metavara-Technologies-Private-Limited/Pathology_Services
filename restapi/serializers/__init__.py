@@ -14,3 +14,4 @@ from .clinic import *
 from .agency_clinic import *
 from .test_sample_link import *
 from .test_template_link import *
+from .collection_serializer import *

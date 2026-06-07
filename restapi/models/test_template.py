@@ -112,8 +112,6 @@ class Template(models.Model):
         auto_now=True
     )
 
-    
-
     class Meta:
         db_table = "templates"
         ordering = ["-id"]

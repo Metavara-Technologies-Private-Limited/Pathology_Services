@@ -22,3 +22,7 @@ class AgencyServiceSerializer(
     class Meta:
         model = AgencyService
         fields = '__all__'
+
+        extra_kwargs = {
+        'agency': {'required': False}
+    }
