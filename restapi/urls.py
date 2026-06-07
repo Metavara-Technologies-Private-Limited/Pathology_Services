@@ -19,7 +19,7 @@ from restapi.views import (
     AgencyClinicViewSet,
     TestParameterLinkViewSet,
     TestSampleLinkViewSet,
-    TestTemplateLinkViewSet
+    TestTemplateLinkViewSet,
 )
 
 router = DefaultRouter()
@@ -139,6 +139,12 @@ from .views import (
     DeletedSamplesAPIView,
     ShipmentReceivedCreateAPIView,
     PathologyOrdersAPIView,
+    #RESULT ENTRY LINKS
+
+    ResultEntryPendingSamplesAPIView,
+    ResultEntryCreateAPIView,
+    ResultEntryListAPIView,
+    ResultEntryCompleteAPIView,
 )
 
 urlpatterns = router.urls + [
@@ -267,5 +273,10 @@ urlpatterns = router.urls + [
         PathologyOrdersAPIView.as_view(),
         name="pathology-orders"
     ),
-]
 #Added Receive section APIs
+
+path("result-entry/pending-samples/", ResultEntryPendingSamplesAPIView.as_view()),
+path("result-entry/create/", ResultEntryCreateAPIView.as_view()),
+path("result-entry/list/", ResultEntryListAPIView.as_view()),
+path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_view()),
+]
