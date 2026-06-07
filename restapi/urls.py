@@ -132,6 +132,15 @@ from .views import (
     DeletedSamplesAPIView,
     ShipmentReceivedCreateAPIView,
     PathologyOrdersAPIView,
+
+    # ORDERS MODULE IMPORTS
+    VidaiOrdersView,
+    VidaiOrderDetailView,
+    CollectionListCreateView,
+    GenerateCollectionBarcodeView,
+    CollectionDetailView,
+    UpdateCollectionStatusView,
+    ChangeCollectionAgencyView,
 )
 
 urlpatterns = router.urls + [
@@ -262,3 +271,49 @@ urlpatterns = router.urls + [
     ),
 ]
 #Added Receive section APIs
+
+# =====================================================
+# ORDERS MODULE APIS
+# =====================================================
+
+urlpatterns += [
+
+    # Orders list + detail — proxied from Vidai EMR
+    path(
+        "orders/",
+        VidaiOrdersView.as_view(),
+        name="vidai-orders-list",
+    ),
+    path(
+        "orders/<int:order_id>/",
+        VidaiOrderDetailView.as_view(),
+        name="vidai-order-detail",
+    ),
+
+    # Collections
+    path(
+        "collections/",
+        CollectionListCreateView.as_view(),
+        name="collection-list-create",
+    ),
+    path(
+        "collections/generate-barcode/",
+        GenerateCollectionBarcodeView.as_view(),
+        name="collection-generate-barcode",
+    ),
+    path(
+        "collections/<uuid:collection_id>/",
+        CollectionDetailView.as_view(),
+        name="collection-detail",
+    ),
+    path(
+        "collections/<uuid:collection_id>/status/",
+        UpdateCollectionStatusView.as_view(),
+        name="collection-status-update",
+    ),
+    path(
+        "collections/<uuid:collection_id>/change-agency/",
+        ChangeCollectionAgencyView.as_view(),
+        name="collection-change-agency",
+    ),
+]
