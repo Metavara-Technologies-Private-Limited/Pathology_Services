@@ -6,7 +6,6 @@ from restapi.views import (
     SampleViewSet,
     TubeViewSet,
     ParameterViewSet,
-    ParameterReferenceRangeViewSet,
     TemplateViewSet,
     TestViewSet,
     CategoryViewSet,
@@ -28,12 +27,6 @@ router.register(r'samples', SampleViewSet, basename='samples')
 router.register(r'tubes', TubeViewSet, basename='tubes')
 
 router.register(r'parameters', ParameterViewSet, basename='parameters')
-
-router.register(
-    r'parameter-reference-ranges',
-    ParameterReferenceRangeViewSet,
-    basename='parameter-reference-ranges'
-)
 
 router.register(
     r'templates',
@@ -145,6 +138,15 @@ from .views import (
     ResultEntryCreateAPIView,
     ResultEntryListAPIView,
     ResultEntryCompleteAPIView,
+
+    # ORDERS MODULE IMPORTS
+    VidaiOrdersView,
+    VidaiOrderDetailView,
+    CollectionListCreateView,
+    GenerateCollectionBarcodeView,
+    CollectionDetailView,
+    UpdateCollectionStatusView,
+    ChangeCollectionAgencyView,
 )
 
 urlpatterns = router.urls + [
@@ -279,4 +281,51 @@ path("result-entry/pending-samples/", ResultEntryPendingSamplesAPIView.as_view()
 path("result-entry/create/", ResultEntryCreateAPIView.as_view()),
 path("result-entry/list/", ResultEntryListAPIView.as_view()),
 path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_view()),
+]
+#Added Receive section APIs
+
+# =====================================================
+# ORDERS MODULE APIS
+# =====================================================
+
+urlpatterns += [
+
+    # Orders list + detail — proxied from Vidai EMR
+    path(
+        "orders/",
+        VidaiOrdersView.as_view(),
+        name="vidai-orders-list",
+    ),
+    path(
+        "orders/<int:order_id>/",
+        VidaiOrderDetailView.as_view(),
+        name="vidai-order-detail",
+    ),
+
+    # Collections
+    path(
+        "collections/",
+        CollectionListCreateView.as_view(),
+        name="collection-list-create",
+    ),
+    path(
+        "collections/generate-barcode/",
+        GenerateCollectionBarcodeView.as_view(),
+        name="collection-generate-barcode",
+    ),
+    path(
+        "collections/<uuid:collection_id>/",
+        CollectionDetailView.as_view(),
+        name="collection-detail",
+    ),
+    path(
+        "collections/<uuid:collection_id>/status/",
+        UpdateCollectionStatusView.as_view(),
+        name="collection-status-update",
+    ),
+    path(
+        "collections/<uuid:collection_id>/change-agency/",
+        ChangeCollectionAgencyView.as_view(),
+        name="collection-change-agency",
+    ),
 ]

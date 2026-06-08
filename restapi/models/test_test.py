@@ -1,5 +1,7 @@
 from django.db import models
 import uuid
+
+from restapi.models.test_category import Category
 from .clinic import Clinic
 from restapi.models.tube import Tube
 from restapi.models.test_parameter import Parameter
@@ -21,6 +23,14 @@ class Test(models.Model):
     related_name="tests",
     )
 
+    category = models.ForeignKey(
+    Category,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name="tests"
+)
+
 
     REPORT_TYPE_CHOICES = [
         ('PARAMETER', 'By Parameter'),
@@ -34,6 +44,11 @@ class Test(models.Model):
 
     test_name = models.CharField(
         max_length=255
+    )
+
+    test_service_id = models.IntegerField(
+    blank=True,
+    null=True
     )
 
     print_name = models.CharField(

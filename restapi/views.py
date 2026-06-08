@@ -20,19 +20,12 @@ from restapi.services.agency_service import AgencyService
 from rest_framework.viewsets import ModelViewSet
 from restapi.serializers.machine import MachineSerializer
 from restapi.services.machine_service import MachineService
-from restapi.serializers.pathology_profile import (
-    PathologyProfileSerializer
-)
-from restapi.services.pathology_profile_service import (
-    PathologyProfileService
-)
+from restapi.serializers.pathology_profile import (PathologyProfileSerializer)
+from restapi.services.pathology_profile_service import (PathologyProfileService)
 from restapi.models.test_category import Category
 from restapi.serializers.test_category import CategorySerializer
-
 from restapi.models.test_template import (Template)
-
 from restapi.serializers.test_template import (TemplateSerializer)
-
 from restapi.services.test_template_service import (TemplateService)
 
 from django.utils.timezone import now
@@ -226,7 +219,7 @@ class ParameterViewSet(viewsets.ViewSet):
 
         return Response(serializer.data)
 
-    def create(self, request):
+    def create(self, request): 
 
         serializer = ParameterSerializer(
             data=request.data
@@ -280,108 +273,6 @@ class ParameterViewSet(viewsets.ViewSet):
 
         return Response(status=204)
 
-
-# ==================================
-# Parameter_ReferenceRange_ViewSet
-# ==================================
-
-class ParameterReferenceRangeViewSet(viewsets.ViewSet):
-
-    def list(self, request):
-
-        reference_ranges = (
-            test_parameter_service.get_all_reference_ranges()
-        )
-
-        paginator = StandardPagination()
-
-        page = paginator.paginate_queryset(
-        reference_ranges,
-        request
-        )
-
-        serializer = ParameterReferenceRangeSerializer(
-        page,
-        many=True
-        )
-
-        return paginator.get_paginated_response(
-        serializer.data
-        )
-
-    def retrieve(self, request, pk=None):
-
-        reference_range = get_object_or_404(
-            ParameterReferenceRange,
-            pk=pk
-        )
-
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                reference_range
-            )
-        )
-
-        return Response(serializer.data)
-
-    def create(self, request):
-
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                data=request.data
-            )
-        )
-
-        if serializer.is_valid():
-
-            serializer.save()
-
-            return Response(
-                serializer.data,
-                status=201
-            )
-
-        return Response(
-            serializer.errors,
-            status=400
-        )
-
-    def update(self, request, pk=None):
-
-        reference_range = get_object_or_404(
-            ParameterReferenceRange,
-            pk=pk
-        )
-
-        serializer = (
-            ParameterReferenceRangeSerializer(
-                reference_range,
-                data=request.data
-            )
-        )
-
-        if serializer.is_valid():
-
-            serializer.save()
-
-            return Response(serializer.data)
-
-        return Response(
-            serializer.errors,
-            status=400
-        )
-
-    def destroy(self, request, pk=None):
-
-        reference_range = get_object_or_404(
-            ParameterReferenceRange,
-            pk=pk
-        )
-
-        reference_range.delete()
-
-        return Response(status=204)
-    
 
 # ==================================
 # Template_Master_ViewSet
@@ -598,14 +489,10 @@ class TestViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            instance = TestService.create_test(
-                serializer.validated_data
-            )
-
-            response_serializer = TestSerializer(instance)
+            serializer.save()
 
             return Response(
-                response_serializer.data,
+                serializer.data,
                 status=status.HTTP_201_CREATED
             )
 
@@ -631,21 +518,14 @@ class TestViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            updated_instance = TestService.update_test(
-                instance,
-                serializer.validated_data
-            )
+            serializer.save()
 
-            response_serializer = TestSerializer(
-                updated_instance
-            )
-
-            return Response(response_serializer.data)
+            return Response(serializer.data)
 
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
-        )
+            )
 
     def destroy(self, request, pk=None):
 
@@ -1272,9 +1152,7 @@ class AgencyViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            instance = AgencyService.create_agency(
-                serializer.validated_data
-            )
+            instance = serializer.save()
 
             response_serializer = AgencySerializer(
                 instance
@@ -1307,12 +1185,7 @@ class AgencyViewSet(ViewSet):
 
         if serializer.is_valid():
 
-            updated_instance = (
-                AgencyService.update_agency(
-                    instance,
-                    serializer.validated_data
-                )
-            )
+            updated_instance = serializer.save()
 
             response_serializer = AgencySerializer(
                 updated_instance
@@ -2099,8 +1972,7 @@ class TestTemplateLinkViewSet(ViewSet):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
-from .services.shipment_services import (
+from restapi.services.shipment_services import (
     create_patient,
     get_all_patients,
     create_pending_shipment,
@@ -2354,7 +2226,7 @@ class ActivityLogsView(APIView):
             })
 
         return Response(data)
-        return Response(data)
+
     
 
 # =========================================
@@ -2753,3 +2625,229 @@ class ResultEntryCompleteAPIView(APIView):
             "message": "Result completed successfully",
             "data": ResultEntrySerializer(result).data
         })
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from restapi.models.collection import Collection
+
+from restapi.selectors.collection_selector import (
+    get_collection_by_id,
+    get_collections,
+)
+
+from restapi.serializers.collection_serializer import (
+    ChangeCollectionAgencySerializer,
+    CollectionSerializer,
+    GenerateCollectionBarcodeSerializer,
+    UpdateCollectionStatusSerializer,
+)
+
+from restapi.services.collection_service import (
+    change_collection_agency,
+    create_collection,
+    generate_collection_identifiers,
+    update_collection_status,
+)
+
+from restapi.workflows.order_workflow import (
+    InvalidStatusTransitionError,
+)
+
+import requests
+from django.conf import settings
+
+class VidaiOrdersView(APIView):
+
+    def get(self, request):
+        try:
+            from restapi.services.collection_service import fetch_vidai_orders
+            data = fetch_vidai_orders(
+                limit=request.query_params.get("limit", 10),
+                offset=request.query_params.get("offset", 0),
+            )
+        except Exception as error:
+            return Response(
+                {"detail": f"Failed to fetch orders from Vidai. {str(error)}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(
+            data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class VidaiOrderDetailView(APIView):
+
+    def get(self, request, order_id):
+        try:
+            from restapi.services.collection_service import fetch_vidai_order_detail
+            data = fetch_vidai_order_detail(order_id=order_id)
+        except Exception as error:
+            return Response(
+                {"detail": f"Failed to fetch order from Vidai. {str(error)}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        # Enrich each invoice_item with pathology collection data
+        for item in data.get("invoice_items", []):
+            service_id = item.get("test_service_id")
+
+            # Get collection record if exists
+            collection = Collection.objects.filter(
+                work_order_id=order_id,
+                test_service_id=service_id,
+            ).first()
+
+            if collection:
+                item["specimen_no"] = collection.specimen_no
+                item["barcode_value"] = collection.barcode_value
+                item["collection_status"] = collection.status
+                item["collection_date"] = collection.collection_date
+                item["collection_time"] = str(collection.collection_time) if collection.collection_time else None
+                item["test_type"] = collection.test_type
+                item["agency_name"] = collection.agency.agency_name if collection.agency else None
+            else:
+                item["specimen_no"] = None
+                item["barcode_value"] = None
+                item["collection_status"] = "PENDING"
+                item["collection_date"] = None
+                item["collection_time"] = None
+                item["test_type"] = None
+                item["agency_name"] = None
+
+            # Enrich with config data from Test model
+            from restapi.services.collection_service import resolve_test_from_service_id
+            test = resolve_test_from_service_id(service_id) if service_id else None
+
+            if test:
+                item["test_code"] = test.test_code
+                item["service_name"] = test.service_name
+                
+
+                item["tube_type"] = test.tube_name.tube_name if test.tube_name else None
+                item["sample_type"] = (
+                    test.test_samples.filter(is_deleted=False)
+                    .first()
+                    .sample.sample_name
+            if test.test_samples.filter(is_deleted=False).exists()
+            else None
+    )
+            else:
+                item["test_code"] = None
+                item["service_name"] = None
+                item["tube_type"] = None
+                item["sample_type"] = None
+
+        return Response(data, status=status.HTTP_200_OK)
+    
+class CollectionListCreateView(APIView):
+    def get(self, request):
+        collections = get_collections(
+            work_order_id=request.query_params.get("work_order_id"),
+            patient_id=request.query_params.get("patient_id"),
+            test_type=request.query_params.get("test_type"),
+            status=request.query_params.get("status"),
+            agency_id=request.query_params.get("agency_id"),
+            date_from=request.query_params.get("date_from"),
+            date_to=request.query_params.get("date_to"),
+        )
+        serializer = CollectionSerializer(collections, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = CollectionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        collection = create_collection(**serializer.validated_data)
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CollectionDetailView(APIView):
+    def get(self, request, collection_id):
+        try:
+            collection = get_collection_by_id(collection_id)
+        except Collection.DoesNotExist:
+            return Response(
+                {"detail": "Collection not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class GenerateCollectionBarcodeView(APIView):
+    def post(self, request):
+        serializer = GenerateCollectionBarcodeSerializer(
+            generate_collection_identifiers()
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdateCollectionStatusView(APIView):
+    def patch(self, request, collection_id):
+        serializer = UpdateCollectionStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            collection = update_collection_status(
+                collection_id=collection_id,
+                new_status=serializer.validated_data["new_status"],
+            )
+        except Collection.DoesNotExist:
+            return Response(
+                {"detail": "Collection not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except InvalidStatusTransitionError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangeCollectionAgencyView(APIView):
+    def patch(self, request, collection_id):
+        serializer = ChangeCollectionAgencySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            collection = change_collection_agency(
+                collection_id=collection_id,
+                new_agency_id=serializer.validated_data["new_agency_id"],
+                reason=serializer.validated_data["reason"],
+            )
+        except Collection.DoesNotExist:
+            return Response(
+                {"detail": "Collection not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ObjectDoesNotExist:
+            return Response(
+                {"detail": "Agency not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ValueError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_200_OK,
+        )
