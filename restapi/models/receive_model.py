@@ -1,11 +1,11 @@
 # Receive section model
 from django.db import models
-from .shipment_received import ShipmentReceived
+from .shipment import ShipmentReceived
 
 
 class ReceiveSample(models.Model):
 
-    shipment_received = models.ForeignKey(
+    shipment = models.ForeignKey(
         ShipmentReceived,
         on_delete=models.CASCADE,
         null=True,

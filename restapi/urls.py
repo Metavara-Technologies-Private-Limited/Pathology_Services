@@ -113,7 +113,7 @@ from django.urls import path
 
 from .views import (
     PatientView,
-    PendingShipmentView,
+    PendingShipmentAPIView,
     ScheduleShippingView,
     MoveToShippedView,
     ShipmentShippedView,
@@ -159,16 +159,13 @@ urlpatterns = router.urls + [
     ),
 
     # Pending Shipment APIs
-    path('pending-shipment/', PendingShipmentView.as_view(), name='pending-shipment'),
+    path('pending-shipment/', PendingShipmentAPIView.as_view(), name='pending-shipment'),
    
     # ScheduleShipping
     path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
     
-    path(
-        'pending-shipment/',
-        PendingShipmentView.as_view(),
-        name='pending-shipment'
-    ),
+    
+    
 
     # Move Pending → Shipped
     path(
