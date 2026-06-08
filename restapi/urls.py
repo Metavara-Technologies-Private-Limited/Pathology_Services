@@ -272,6 +272,13 @@ urlpatterns = router.urls + [
         PathologyOrdersAPIView.as_view(),
         name="pathology-orders"
     ),
+    
+    path(
+        "laboratory-test/",
+        LaboratoryTestAPIView.as_view(),
+        name="laboratory-test"
+    ),
+
 #Added Receive section APIs
 
 path("result-entry/pending-samples/", ResultEntryPendingSamplesAPIView.as_view()),

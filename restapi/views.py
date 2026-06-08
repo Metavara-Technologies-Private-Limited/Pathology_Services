@@ -2577,6 +2577,26 @@ class PathologyOrdersAPIView(APIView):
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from restapi.services.laboratory_test_service import (
+    LaboratoryTestService
+)
+
+
+class LaboratoryTestAPIView(APIView):
+
+    def get(self, request):
+
+        data = LaboratoryTestService.get_laboratory_tests(
+            request.query_params
+        )
+
+        return Response(data)
+
+
+
 #Result Entry 
 class ResultEntryPendingSamplesAPIView(APIView):
     def get(self, request):
