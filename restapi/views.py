@@ -27,7 +27,10 @@ from restapi.serializers.test_category import CategorySerializer
 from restapi.models.test_template import (Template)
 from restapi.serializers.test_template import (TemplateSerializer)
 from restapi.services.test_template_service import (TemplateService)
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
+from restapi.models import Collection
 from django.utils.timezone import now
 from restapi.models.receive_model import ReceiveSample
 from restapi.models.result_entry_model import ResultEntry
@@ -2025,28 +2028,27 @@ class PatientView(APIView):
 # PENDING SHIPMENT VIEW
 # =========================================
 
-class PendingShipmentView(APIView):
+class PendingShipmentAPIView(APIView):
 
     def get(self, request):
 
-        shipments = get_all_pending_shipments()
+        data = Collection.objects.all()
 
-        data = []
+        response = []
 
-        for item in shipments:
-            data.append({
-                "id": item.id,
-                "order_date": item.order_date,
-                "sample_no": item.sample_no,
-                "sample_type": item.sample_type,
-                "test_code": item.test_code,
-                "test_name": item.test_name,
-                "service_name": item.service_name,
-                "patient": item.patient.patient_name
+        for item in data:
+            response.append({
+                "scheduled_collection_id": item.id,
+                "sample_no": item.specimen_no,
+                "work_order_id": item.work_order_id,
+                "work_order_id": item.work_order_id,
+                "collection_date": item.collection_date,
+                "status": "pending"  # or from PendingShipment table
             })
 
-        return Response(data)
-
+        return Response(response)
+    
+            
     def post(self, request):
 
         shipment = create_pending_shipment(request.data)
@@ -2247,7 +2249,7 @@ from django.forms.models import model_to_dict
 
 from restapi.models.receive_model import ReceiveSample
 from restapi.serializers.receive_serializer import ReceiveSampleSerializer
-from restapi.models.shipment_received import ShipmentReceived
+from restapi.models.shipment import ShipmentReceived
 
 
 logger = logging.getLogger(__name__)
