@@ -28,6 +28,11 @@ from restapi.models.test_template import (Template)
 from restapi.serializers.test_template import (TemplateSerializer)
 from restapi.services.test_template_service import (TemplateService)
 
+from django.utils.timezone import now
+from restapi.models.receive_model import ReceiveSample
+from restapi.models.result_entry_model import ResultEntry
+from restapi.serializers.result_entry_serializer import ResultEntrySerializer
+
 # ==================================
 # Sample_(Master)_ViewSet
 # ==================================
@@ -2570,6 +2575,56 @@ class PathologyOrdersAPIView(APIView):
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+#Result Entry 
+class ResultEntryPendingSamplesAPIView(APIView):
+    def get(self, request):
+        samples = ReceiveSample.objects.filter(status="Received", is_deleted=False)
+        data = []
+
+        for item in samples:
+            data.append({
+                "id": item.id,
+                "shipment_no": item.shipment_no,
+                "specimen_no": item.specimen_no,
+                "patient_name": item.patient_name,
+                "test_name": item.test_name,
+                "status": item.status
+            })
+
+        return Response(data)
+
+
+class ResultEntryCreateAPIView(APIView):
+    def post(self, request):
+        serializer = ResultEntrySerializer(data=request.data)
+
+        if serializer.is_valid():
+            result = serializer.save()
+            return Response({
+                "message": "Result entry created successfully",
+                "data": ResultEntrySerializer(result).data
+            }, status=201)
+
+        return Response(serializer.errors, status=400)
+
+
+class ResultEntryListAPIView(APIView):
+    def get(self, request):
+        results = ResultEntry.objects.filter(is_deleted=False).order_by("-id")
+        serializer = ResultEntrySerializer(results, many=True)
+        return Response(serializer.data)
+
+
+class ResultEntryCompleteAPIView(APIView):
+    def post(self, request, result_id):
+        result = ResultEntry.objects.get(id=result_id, is_deleted=False)
+        result.result_status = "Completed"
+        result.save()
+
+        return Response({
+            "message": "Result completed successfully",
+            "data": ResultEntrySerializer(result).data
+        })
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
