@@ -2226,7 +2226,7 @@ class ShipmentReceivedView(APIView):
                 "id": item.id,
                 "received_no": item.received_no,
                 "receive_date": item.receive_date,
-                "shipment_no": item.shipped_shipment.shipment_no,
+               "shipment_no": item.shipped_shipment.shipment_no if item.shipped_shipment else None,
                 "status": item.status,
                 "result": item.result
             })
