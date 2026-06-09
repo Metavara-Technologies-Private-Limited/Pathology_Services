@@ -202,13 +202,6 @@ urlpatterns = router.urls + [
         name='activity-logs'
     ),
 
-    # ScheduleShipping
-    path(
-        'schedule-shipping/',
-        ScheduleShippingView.as_view(),
-        name='schedule-shipping'
-    ),
-
     # =====================================================
     # RECEIVE MODULE APIS
     # =====================================================

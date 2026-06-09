@@ -182,6 +182,10 @@ class ParameterViewSet(viewsets.ViewSet):
 
         search = request.GET.get("search")
 
+        parameters = (
+        test_parameter_service.get_all_parameters()
+     )
+
         if search:
             parameters = parameters.filter(
             Q(parameter_code__icontains=search) |
@@ -189,11 +193,6 @@ class ParameterViewSet(viewsets.ViewSet):
             Q(parameter_print_name__icontains=search) |
             Q(unit__icontains=search)
     )
-
-
-        parameters = (
-        test_parameter_service.get_all_parameters()
-     )
 
         paginator = StandardPagination()
 
@@ -445,14 +444,14 @@ class TestViewSet(ViewSet):
 
         search = request.GET.get("search")
 
+        queryset = TestService.get_all_tests()
+
         if search:
             queryset = queryset.filter(
             Q(test_code__icontains=search) |
             Q(test_name__icontains=search) |
             Q(print_name__icontains=search)
         )
-
-        queryset = TestService.get_all_tests()
 
         paginator = StandardPagination()
 
@@ -578,12 +577,12 @@ class PathologyProfileViewSet(ViewSet):
 
         search = request.GET.get("search")
 
+        queryset = PathologyProfileService.get_all_profiles()
+
         if search:
             queryset = queryset.filter(
             Q(service_name__icontains=search)
         )
-
-        queryset = PathologyProfileService.get_all_profiles()
 
         paginator = StandardPagination()
 

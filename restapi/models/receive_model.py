@@ -43,6 +43,10 @@ class ReceiveSample(models.Model):
 
     accepted_by = models.CharField(max_length=100, null=True, blank=True)
 
+    rejected_by = models.CharField(max_length=100, null=True, blank=True)
+
+    resend_new_sample = models.BooleanField(default=False)
+
     remark = models.TextField(null=True, blank=True)
 
     sub_optimal = models.BooleanField(default=False)
