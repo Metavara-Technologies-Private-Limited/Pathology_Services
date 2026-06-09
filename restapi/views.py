@@ -2030,13 +2030,21 @@ class PendingShipmentAPIView(APIView):
 
     def get(self, request):
 
+        from restapi.models import ShipmentShipped as ShipmentShippedModel
+        # Get IDs of pending shipments already moved to shipped
+        shipped_pending_ids = set(
+            ShipmentShippedModel.objects.values_list('pending_shipment_id', flat=True)
+        )
+
         shipments = get_all_pending_shipments()
 
         response = []
 
         for item in shipments:
-            pending = item
-            patient = pending.patient if pending else None
+            # Skip items already shipped
+            if item.id in shipped_pending_ids:
+                continue
+            patient = item.patient
             response.append({
                 "id": item.id,
                 "order_date": str(item.order_date) if item.order_date else None,
@@ -2056,8 +2064,7 @@ class PendingShipmentAPIView(APIView):
             })
 
         return Response(response)
-    
-            
+
     def post(self, request):
 
         shipment = create_pending_shipment(request.data)
@@ -2099,21 +2106,12 @@ class ScheduleShippingView(APIView):
 
     def post(self, request):
 
-        # Create schedule shipping record
         schedule = create_schedule_shipping(request.data)
-
-        # ✅ FIX: Also move to ShipmentShipped so it appears in Shipped tab
-        shipped = move_to_shipped(
-            pending_id=request.data.get("pending_id"),
-            ship_to=request.data.get("ship_to"),
-            ship_by=request.data.get("dispatched_by", "Receptionist")
-        )
 
         return Response(
             {
                 "message": "Schedule shipping created successfully",
                 "id": schedule.id,
-                "shipment_no": shipped.shipment_no
             },
             status=status.HTTP_201_CREATED
         )
