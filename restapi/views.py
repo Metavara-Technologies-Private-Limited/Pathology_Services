@@ -2902,3 +2902,37 @@ class ChangeCollectionAgencyView(APIView):
             CollectionSerializer(collection).data,
             status=status.HTTP_200_OK,
         )
+
+# ==================================
+# Parameter Reference Range Views
+# ==================================
+
+class ReferenceRangeListCreateView(APIView):
+
+    def post(self, request, parameter_id):
+        parameter = get_object_or_404(Parameter, pk=parameter_id)
+        serializer = ParameterReferenceRangeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(parameter=parameter)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ReferenceRangeDetailView(APIView):
+
+    def put(self, request, parameter_id, pk):
+        instance = get_object_or_404(
+            ParameterReferenceRange, pk=pk, parameter=parameter_id
+        )
+        serializer = ParameterReferenceRangeSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, parameter_id, pk):
+        instance = get_object_or_404(
+            ParameterReferenceRange, pk=pk, parameter=parameter_id
+        )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
