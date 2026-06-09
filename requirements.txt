@@ -11,6 +11,7 @@ django-cors-headers==4.9.0
 django-extensions==4.1
 djangorestframework==3.16.1
 drf-yasg==1.21.14
+drf-spectacular==0.28.0
 frozenlist==1.8.0
 graphviz==0.21
 gunicorn==25.0.1
