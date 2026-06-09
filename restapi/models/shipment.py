@@ -5,8 +5,16 @@ from restapi.models.collection import Collection
 from .patient import Patient
 
 class PendingShipment(models.Model):
-    STATUS_CHOICES = [('Completed', 'Completed'),
-                      ('Pending', 'Pending')]
+    STATUS_CHOICES = [
+        ('Completed', 'Completed'),
+        ('Pending', 'Pending')
+    ]
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='Pending'
+    )
     scheduled_collection = models.ForeignKey(
     Collection,
     on_delete=models.CASCADE,
