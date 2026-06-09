@@ -20,6 +20,7 @@ from restapi.views import (
     TestSampleLinkViewSet,
     TestTemplateLinkViewSet,
 )
+from .views import ReferenceRangeListCreateView, ReferenceRangeDetailView
 
 router = DefaultRouter()
 
@@ -286,6 +287,16 @@ path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_vie
 # =====================================================
 
 urlpatterns += [
+     path(
+        "parameters/<uuid:parameter_id>/reference-ranges/",
+        ReferenceRangeListCreateView.as_view(),
+        name="reference-range-create",
+    ),
+    path(
+        "parameters/<uuid:parameter_id>/reference-ranges/<int:pk>/",
+        ReferenceRangeDetailView.as_view(),
+        name="reference-range-detail",
+    ),
 
     # Orders list + detail — proxied from Vidai EMR
     path(
