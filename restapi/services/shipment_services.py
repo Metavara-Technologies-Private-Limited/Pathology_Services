@@ -6,13 +6,13 @@ from ..models import (
     ScheduleShipping,
     ShipmentShipped,
     ShipmentReceived,
-    ActivityLogs
+    ActivityLogs,
 )
-
 
 # =========================================
 # PATIENT SERVICES
 # =========================================
+
 
 def create_patient(data):
     return Patient.objects.create(
@@ -20,7 +20,7 @@ def create_patient(data):
         age=data.get("age"),
         sex=data.get("sex"),
         mrn=data.get("mrn"),
-        cycle_id=data.get("cycle_id")
+        cycle_id=data.get("cycle_id"),
     )
 
 
@@ -36,11 +36,10 @@ def get_patient_by_id(patient_id):
 # PENDING SHIPMENT SERVICES
 # =========================================
 
+
 def create_pending_shipment(data):
 
-    patient = Patient.objects.get(
-        id=data.get("patient")
-    )
+    patient = Patient.objects.get(id=data.get("patient"))
 
     return PendingShipment.objects.create(
         patient=patient,
@@ -49,7 +48,7 @@ def create_pending_shipment(data):
         sample_type=data.get("sample_type"),
         test_code=data.get("test_code"),
         test_name=data.get("test_name"),
-        service_name=data.get("service_name")
+        service_name=data.get("service_name"),
     )
 
 
@@ -65,18 +64,17 @@ def get_pending_by_id(pending_id):
 # SCHEDULE SHIPPING SERVICES
 # =========================================
 
+
 def create_schedule_shipping(data):
 
-    pending = PendingShipment.objects.get(
-        id=data.get("pending_id")
-    )
+    pending = PendingShipment.objects.get(id=data.get("pending_id"))
 
     return ScheduleShipping.objects.create(
         pending=pending,
         ship_date=data.get("ship_date"),
         ship_time=data.get("ship_time"),
         dispatched_by=data.get("dispatched_by"),
-        ship_to=data.get("ship_to")
+        ship_to=data.get("ship_to"),
     )
 
 
@@ -88,20 +86,29 @@ def get_all_schedule_shipping():
 # MOVE PENDING → SHIPPED
 # =========================================
 
+
 def move_to_shipped(pending_id, ship_to, ship_by):
 
-    pending = PendingShipment.objects.get(
-        id=pending_id
-    )
+    pending = PendingShipment.objects.get(id=pending_id)
+
+    # If already shipped, return existing record
+    existing = ShipmentShipped.objects.filter(pending_shipment=pending).first()
+
+    if existing:
+        return existing
+
+    # Generate unique shipment number using timestamp
+    ts = timezone.now().strftime("%Y%m%d%H%M%S%f")
+    shipment_no = f"SHIP-{pending.id}-{ts}"
 
     pending.status = "Completed"
     pending.save()
 
     shipped = ShipmentShipped.objects.create(
         pending_shipment=pending,
-        shipment_no=f"SHIP-{pending.id}",
+        shipment_no=shipment_no,
         ship_date=timezone.now(),
-        ship_to=ship_to
+        ship_to=ship_to,
     )
 
     ActivityLogs.objects.create(
@@ -109,7 +116,7 @@ def move_to_shipped(pending_id, ship_to, ship_by):
         ship_date_time=timezone.now(),
         ship_from="Main Lab",
         ship_to=ship_to,
-        ship_by=ship_by
+        ship_by=ship_by,
     )
 
     return shipped
@@ -123,22 +130,17 @@ def get_all_shipped_shipments():
 # MOVE SHIPPED → RECEIVED
 # =========================================
 
-def move_to_received(
-    shipped_id,
-    status_value,
-    result_value
-):
 
-    shipped = ShipmentShipped.objects.get(
-        id=shipped_id
-    )
+def move_to_received(shipped_id, status_value, result_value):
+
+    shipped = ShipmentShipped.objects.get(id=shipped_id)
 
     return ShipmentReceived.objects.create(
         shipped_shipment=shipped,
         receive_date=timezone.now(),
         received_no=f"REC-{shipped.id}",
         status=status_value,
-        result=result_value
+        result=result_value,
     )
 
 
@@ -150,20 +152,19 @@ def get_all_received_shipments():
 # ACTIVITY LOG SERVICES
 # =========================================
 
+
 def get_all_activity_logs():
     return ActivityLogs.objects.all()
 
 
 def create_manual_activity_log(data):
 
-    shipped = ShipmentShipped.objects.get(
-        id=data.get("shipped_shipment")
-    )
+    shipped = ShipmentShipped.objects.get(id=data.get("shipped_shipment"))
 
     return ActivityLogs.objects.create(
         shipped_shipment=shipped,
         ship_date_time=timezone.now(),
         ship_from=data.get("ship_from"),
         ship_to=data.get("ship_to"),
-        ship_by=data.get("ship_by")
+        ship_by=data.get("ship_by"),
     )
