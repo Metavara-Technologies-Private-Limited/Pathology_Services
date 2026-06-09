@@ -2278,7 +2278,7 @@ from django.forms.models import model_to_dict
 
 from restapi.models.receive_model import ReceiveSample
 from restapi.serializers.receive_serializer import ReceiveSampleSerializer
-from restapi.models.shipment import ShipmentReceived
+from restapi.models.shipment import ShipmentShipped, ShipmentReceived
 
 
 logger = logging.getLogger(__name__)
@@ -2582,6 +2582,85 @@ class ShipmentReceivedCreateAPIView(APIView):
                 {"error": "Internal Server Error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+# =====================================================
+# SHIPPED TAB API
+# =====================================================
+
+class ReceiveShippedTabAPIView(APIView):
+
+    def get(self, request):
+        try:
+            queryset = ShipmentShipped.objects.filter(
+                pending_shipment__status="Completed"
+            ).order_by("-id")
+
+            data = []
+
+            for item in queryset:
+                pending = item.pending_shipment
+
+                data.append({
+                    "id": item.id,
+                    "shipment_no": item.shipment_no,
+                    "ship_date": item.ship_date,
+                    "ship_to": item.ship_to,
+                    "sample_no": pending.sample_no if pending else None,
+                    "sample_type": pending.sample_type if pending else None,
+                    "test_code": pending.test_code if pending else None,
+                    "test_name": pending.test_name if pending else None,
+                    "service_name": pending.service_name if pending else None,
+                    "status": "Completed"
+                })
+
+            return Response({
+                "message": "Shipped samples fetched successfully",
+                "data": data
+            }, status=status.HTTP_200_OK)
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# =====================================================
+# CONVERT SHIPPED TO RECEIVED API
+# =====================================================
+
+class ConvertShippedToReceivedAPIView(APIView):
+
+    def post(self, request, shipment_id):
+        try:
+            shipment = get_object_or_404(
+                ShipmentShipped,
+                id=shipment_id
+            )
+
+            pending = shipment.pending_shipment
+
+            receive_sample = ReceiveSample.objects.create(
+                ship_date=shipment.ship_date.date(),
+                ship_time=shipment.ship_date.time(),
+                shipment_no=shipment.shipment_no,
+                specimen_no=pending.sample_no if pending else "",
+                specimen_type=pending.sample_type if pending else "",
+                test_code=pending.test_code if pending else "",
+                test_name=pending.test_name if pending else "",
+                service_name=pending.service_name if pending else "",
+                patient_name=str(pending.patient) if pending and pending.patient else "",
+                patient_age=0,
+                patient_gender="",
+                patient_code="",
+                status="Done"
+            )
+
+            serializer = ReceiveSampleSerializer(receive_sample)
+
+            return Response({
+                "message": "Sample moved to received successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response({"error": "Shipment not found or Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Added Receive section views
 
 from rest_framework.views import APIView

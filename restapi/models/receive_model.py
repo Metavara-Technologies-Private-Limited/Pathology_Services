@@ -51,6 +51,8 @@ class ReceiveSample(models.Model):
 
     sub_optimal = models.BooleanField(default=False)
 
+    resend_new_sample = models.BooleanField(default=False)
+
     status = models.CharField(max_length=50, default="Shipped")
 
     is_deleted = models.BooleanField(default=False)

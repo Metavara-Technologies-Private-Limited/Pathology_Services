@@ -132,7 +132,11 @@ from .views import (
     ActiveSamplesAPIView,
     DeletedSamplesAPIView,
     ShipmentReceivedCreateAPIView,
+    PendingShipmentAPIView,
+    ReceiveShippedTabAPIView,
+    ConvertShippedToReceivedAPIView,
     PathologyOrdersAPIView,
+
     #RESULT ENTRY LINKS
 
     ResultEntryPendingSamplesAPIView,
@@ -203,75 +207,105 @@ urlpatterns = router.urls + [
         name='activity-logs'
     ),
 
+#Updated upstream
     # =====================================================
     # RECEIVE MODULE APIS
     # =====================================================
-
+    # ScheduleShipping
     path(
-        "create-sample/",
-        ReceiveSampleCreateAPIView.as_view(),
-        name="create-sample"
+        'schedule-shipping/',
+        ScheduleShippingView.as_view(),
+        name='schedule-shipping'
     ),
 
-    path(
-        "samples/",
-        ReceiveSampleListAPIView.as_view(),
-        name="sample-list"
-    ),
+# =====================================================
+# RECEIVE MODULE APIS
+# =====================================================
+#Stashed changes
 
-    path(
-        "receive-sample/<int:sample_id>/",
-        ReceiveSampleAPIView.as_view(),
-        name="receive-sample"
-    ),
+path(
+    "create-sample/",
+    ReceiveSampleCreateAPIView.as_view(),
+    name="create-sample"
+),
 
-    path(
-        "reject-sample/<int:sample_id>/",
-        RejectSampleAPIView.as_view(),
-        name="reject-sample"
-    ),
+path(
+    "samples/",
+    ReceiveSampleListAPIView.as_view(),
+    name="sample-list"
+),
 
-    path(
-        "receive-activity-logs/",
-        ReceiveActivityLogsAPIView.as_view(),
-        name="receive-activity-logs"
-    ),
+path(
+    "receive-sample/<int:sample_id>/",
+    ReceiveSampleAPIView.as_view(),
+    name="receive-sample"
+),
 
-    path(
-        "delete-sample/<int:sample_id>/",
-        DeleteSampleAPIView.as_view(),
-        name="delete-sample"
-    ),
+path(
+    "reject-sample/<int:sample_id>/",
+    RejectSampleAPIView.as_view(),
+    name="reject-sample"
+),
 
-    path(
-        "active-samples/",
-        ActiveSamplesAPIView.as_view(),
-        name="active-samples"
-    ),
+path(
+    "receive-activity-logs/",
+    ReceiveActivityLogsAPIView.as_view(),
+    name="receive-activity-logs"
+),
 
-    path(
-        "deleted-samples/",
-        DeletedSamplesAPIView.as_view(),
-        name="deleted-samples"
-    ),
+path(
+    "delete-sample/<int:sample_id>/",
+    DeleteSampleAPIView.as_view(),
+    name="delete-sample"
+),
 
-    path(
-        "create-shipment-received/",
-        ShipmentReceivedCreateAPIView.as_view(),
-        name="create-shipment-received"
-    ),
+path(
+    "active-samples/",
+    ActiveSamplesAPIView.as_view(),
+    name="active-samples"
+),
 
-    path(
-        "pathology-orders/",
-        PathologyOrdersAPIView.as_view(),
-        name="pathology-orders"
-    ),
-    
-    path(
-        "laboratory-test/",
-        LaboratoryTestAPIView.as_view(),
-        name="laboratory-test"
-    ),
+path(
+    "deleted-samples/",
+    DeletedSamplesAPIView.as_view(),
+    name="deleted-samples"
+),
+
+path(
+    "create-shipment-received/",
+    ShipmentReceivedCreateAPIView.as_view(),
+    name="create-shipment-received"
+),
+
+path(
+    "pending-shipment/",
+    PendingShipmentAPIView.as_view(),
+    name="pending-shipment"
+),
+
+path(
+    "receive/shipped-tab/",
+    ReceiveShippedTabAPIView.as_view(),
+    name="receive-shipped-tab"
+),
+
+path(
+    "receive/convert/<int:shipment_id>/",
+    ConvertShippedToReceivedAPIView.as_view(),
+    name="convert-shipped-to-received"
+),
+
+path(
+    "pathology-orders/",
+    PathologyOrdersAPIView.as_view(),
+    name="pathology-orders"
+),
+
+path(
+    "laboratory-test/",
+    LaboratoryTestAPIView.as_view(),
+    name="laboratory-test"
+),
 
 #Added Receive section APIs
 

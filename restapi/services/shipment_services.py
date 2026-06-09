@@ -101,6 +101,9 @@ def move_to_shipped(pending_id, ship_to, ship_by):
     ts = timezone.now().strftime("%Y%m%d%H%M%S%f")
     shipment_no = f"SHIP-{pending.id}-{ts}"
 
+    pending.status = "Completed"
+    pending.save()
+
     shipped = ShipmentShipped.objects.create(
         pending_shipment=pending,
         shipment_no=shipment_no,
