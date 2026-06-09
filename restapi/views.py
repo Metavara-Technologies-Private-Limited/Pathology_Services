@@ -3016,3 +3016,235 @@ class ReferenceRangeDetailView(APIView):
         )
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+#Authorization views
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+
+from django.utils import timezone
+from datetime import date, datetime
+
+from restapi.models.authorization_models import Authorization
+from restapi.serializers.authorization_serializers import AuthorizationSerializer
+
+
+@api_view(['DELETE'])
+def delete_result_api(request, result_id):
+    try:
+        result = ResultEntry.objects.get(id=result_id)
+
+        result.is_deleted = True
+        result.deleted_at = timezone.now()
+        result.save()
+
+        return Response({
+            "message": "Result Deleted Successfully"
+        })
+
+    except ResultEntry.DoesNotExist:
+        return Response(
+            {"message": "Result not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+class AuthorizationListAPIView(APIView):
+
+    def get(self, request):
+
+        search = request.GET.get("search")
+        status_filter = request.GET.get("status")
+
+        data = Authorization.objects.filter(
+            is_deleted=False
+        )
+
+        if status_filter:
+            data = data.filter(
+                authorization_status=status_filter
+            )
+
+        if search:
+            data = data.filter(
+                patient_name__icontains=search
+            )
+
+        serializer = AuthorizationSerializer(
+            data,
+            many=True
+        )
+
+        return Response(serializer.data)
+
+
+class AuthorizationCreateAPIView(APIView):
+
+    def post(self, request):
+
+        result_entry_id = request.data.get("result_entry")
+
+        try:
+            result_entry = ResultEntry.objects.get(
+                id=result_entry_id
+            )
+
+        except ResultEntry.DoesNotExist:
+            return Response(
+                {"message": "Result Entry Not Found"},
+                status=404
+            )
+
+        authorization = Authorization.objects.create(
+
+            result_entry=result_entry,
+
+            order_date=date.today(),
+            order_time=datetime.now().time(),
+
+            patient_name=result_entry.receive_sample.patient_name,
+            patient_age=result_entry.receive_sample.patient_age,
+            patient_gender=result_entry.receive_sample.patient_gender,
+            patient_code=result_entry.receive_sample.patient_code,
+
+            patient_type="OP",
+            doctor_name="Doctor",
+            bill_no=f"BILL-{result_entry.id}",
+
+            no_of_orders=1,
+
+            test_name=result_entry.parameter_name,
+
+            result_status=result_entry.result_status,
+
+            authorization_status="Pending"
+        )
+
+        serializer = AuthorizationSerializer(
+            authorization
+        )
+
+        return Response(
+            serializer.data,
+            status=201
+        )
+
+
+class ApproveResultAPIView(APIView):
+
+    def post(self, request, pk):
+
+        try:
+
+            obj = Authorization.objects.get(id=pk)
+
+            obj.authorization_status = "APPROVED"
+            obj.authorized_date = timezone.now()
+
+            obj.save()
+
+            return Response({
+                "message": "Authorization Approved"
+            })
+
+        except Authorization.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Authorization Not Found"
+                },
+                status=404
+            )
+
+
+class RejectAuthorizationAPIView(APIView):
+
+    def post(self, request, pk):
+
+        try:
+
+            obj = Authorization.objects.get(id=pk)
+
+            obj.authorization_status = "REJECTED"
+            obj.remark = request.data.get("remark")
+            obj.authorized_date = timezone.now()
+
+            obj.save()
+
+            return Response({
+                "message": "Authorization Rejected Successfully"
+            })
+
+        except Authorization.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Authorization Not Found"
+                },
+                status=404
+            )
+
+
+class DeleteAuthorizationAPIView(APIView):
+
+    def delete(self, request, pk):
+
+        try:
+
+            obj = Authorization.objects.get(
+                id=pk,
+                is_deleted=False
+            )
+
+            obj.is_deleted = True
+            obj.deleted_at = timezone.now()
+
+            obj.save()
+
+            return Response({
+                "message": "Authorization Deleted Successfully"
+            })
+
+        except Authorization.DoesNotExist:
+
+            return Response(
+                {
+                    "message": "Authorization Not Found"
+                },
+                status=404
+            )
+
+
+class AuthorizationLogsAPIView(APIView):
+
+    def get(self, request):
+
+        data = Authorization.objects.filter(
+            authorization_status__in=["APPROVED", "REJECTED"],
+            is_deleted=False
+        )
+
+        serializer = AuthorizationSerializer(
+            data,
+            many=True
+        )
+
+        return Response(serializer.data)
+
+
+class DeletedAuthorizationAPIView(APIView):
+
+    def get(self, request):
+
+        data = Authorization.objects.filter(
+            is_deleted=True
+        )
+
+        serializer = AuthorizationSerializer(
+            data,
+            many=True
+        )
+
+        return Response(serializer.data)
