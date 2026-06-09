@@ -16,5 +16,6 @@ from .shipment import ShipmentReceived
 from .shipment import ActivityLogs
 from .patient import Patient
 from .shipment import ScheduleShipping
+from .receive_model import ReceiveSample
 from .result_entry_model import ResultEntry
 from .collection import Collection
