@@ -2046,6 +2046,7 @@ class PendingShipmentAPIView(APIView):
                 continue
             patient = item.patient
             response.append({
+                "status": item.status,
                 "id": item.id,
                 "order_date": str(item.order_date) if item.order_date else None,
                 "sample_no": item.sample_no,
