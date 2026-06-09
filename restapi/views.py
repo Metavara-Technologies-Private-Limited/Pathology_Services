@@ -2026,23 +2026,33 @@ class PatientView(APIView):
 # =========================================
 # PENDING SHIPMENT VIEW
 # =========================================
-
 class PendingShipmentAPIView(APIView):
 
     def get(self, request):
 
-        data = Collection.objects.all()
+        shipments = get_all_pending_shipments()
 
         response = []
 
-        for item in data:
+        for item in shipments:
+            pending = item
+            patient = pending.patient if pending else None
             response.append({
-                "scheduled_collection_id": item.id,
-                "sample_no": item.specimen_no,
-                "work_order_id": item.work_order_id,
-                "work_order_id": item.work_order_id,
-                "collection_date": item.collection_date,
-                "status": "pending"  # or from PendingShipment table
+                "id": item.id,
+                "order_date": str(item.order_date) if item.order_date else None,
+                "sample_no": item.sample_no,
+                "sample_type": item.sample_type,
+                "test_code": item.test_code,
+                "test_name": item.test_name,
+                "service_name": item.service_name,
+                "patient": {
+                    "id": patient.id,
+                    "name": patient.patient_name,
+                    "age": patient.age,
+                    "patient_code": patient.mrn,
+                    "gender": patient.sex,
+                } if patient else None,
+                "created_at": str(item.created_at) if hasattr(item, 'created_at') else None,
             })
 
         return Response(response)
@@ -2089,12 +2099,21 @@ class ScheduleShippingView(APIView):
 
     def post(self, request):
 
+        # Create schedule shipping record
         schedule = create_schedule_shipping(request.data)
+
+        # ✅ FIX: Also move to ShipmentShipped so it appears in Shipped tab
+        shipped = move_to_shipped(
+            pending_id=request.data.get("pending_id"),
+            ship_to=request.data.get("ship_to"),
+            ship_by=request.data.get("dispatched_by", "Receptionist")
+        )
 
         return Response(
             {
                 "message": "Schedule shipping created successfully",
-                "id": schedule.id
+                "id": schedule.id,
+                "shipment_no": shipped.shipment_no
             },
             status=status.HTTP_201_CREATED
         )
@@ -2140,13 +2159,26 @@ class ShipmentShippedView(APIView):
         data = []
 
         for item in shipments:
+            pending = item.pending_shipment
+            patient = pending.patient if pending else None
             data.append({
                 "id": item.id,
                 "shipment_no": item.shipment_no,
-                "ship_date": item.ship_date,
-                "sample_no": item.pending_shipment.sample_no,
-                "patient": item.pending_shipment.patient.patient_name,
-                "ship_to": item.ship_to
+                "ship_date": str(item.ship_date) if item.ship_date else None,
+                "ship_to": item.ship_to,
+                "pending_shipment": {
+                    "sample_no": pending.sample_no if pending else None,
+                    "sample_type": pending.sample_type if pending else None,
+                    "test_code": pending.test_code if pending else None,
+                    "test_name": pending.test_name if pending else None,
+                    "service_name": pending.service_name if pending else None,
+                    "patient": {
+                        "name": patient.patient_name,
+                        "age": patient.age,
+                        "patient_code": patient.mrn,
+                        "gender": patient.sex,
+                    } if patient else None,
+                } if pending else None,
             })
 
         return Response(data)
