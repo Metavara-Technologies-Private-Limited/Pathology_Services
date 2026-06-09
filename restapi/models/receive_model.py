@@ -1,11 +1,11 @@
 # Receive section model
 from django.db import models
-from .shipment_received import ShipmentReceived
+from .shipment import ShipmentReceived
 
 
 class ReceiveSample(models.Model):
 
-    shipment_received = models.ForeignKey(
+    shipment = models.ForeignKey(
         ShipmentReceived,
         on_delete=models.CASCADE,
         null=True,
@@ -43,9 +43,15 @@ class ReceiveSample(models.Model):
 
     accepted_by = models.CharField(max_length=100, null=True, blank=True)
 
+    rejected_by = models.CharField(max_length=100, null=True, blank=True)
+
+    resend_new_sample = models.BooleanField(default=False)
+
     remark = models.TextField(null=True, blank=True)
 
     sub_optimal = models.BooleanField(default=False)
+
+    resend_new_sample = models.BooleanField(default=False)
 
     status = models.CharField(max_length=50, default="Shipped")
 

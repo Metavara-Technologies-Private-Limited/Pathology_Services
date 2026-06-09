@@ -10,9 +10,12 @@ from .machine_parameter import *
 from .agency_service import *
 from .clinic import *
 from .agency_clinic import *
-from .shipment_pending import PendingShipment
-from .shipment_shipped import ShipmentShipped
-from .shipment_received import ShipmentReceived
-from .shipment_activitylogs import ActivityLogs
+from .shipment import PendingShipment
+from .shipment import ShipmentShipped
+from .shipment import ShipmentReceived
+from .shipment import ActivityLogs
 from .patient import Patient
-from .shipment_schedule_shipping import ScheduleShipping
+from .shipment import ScheduleShipping
+from .receive_model import ReceiveSample
+from .result_entry_model import ResultEntry
+from .collection import Collection

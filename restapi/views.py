@@ -27,6 +27,14 @@ from restapi.serializers.test_category import CategorySerializer
 from restapi.models.test_template import (Template)
 from restapi.serializers.test_template import (TemplateSerializer)
 from restapi.services.test_template_service import (TemplateService)
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from restapi.models import Collection
+from django.utils.timezone import now
+from restapi.models.receive_model import ReceiveSample
+from restapi.models.result_entry_model import ResultEntry
+from restapi.serializers.result_entry_serializer import ResultEntrySerializer
 
 # ==================================
 # Sample_(Master)_ViewSet
@@ -174,6 +182,10 @@ class ParameterViewSet(viewsets.ViewSet):
 
         search = request.GET.get("search")
 
+        parameters = (
+        test_parameter_service.get_all_parameters()
+     )
+
         if search:
             parameters = parameters.filter(
             Q(parameter_code__icontains=search) |
@@ -181,11 +193,6 @@ class ParameterViewSet(viewsets.ViewSet):
             Q(parameter_print_name__icontains=search) |
             Q(unit__icontains=search)
     )
-
-
-        parameters = (
-        test_parameter_service.get_all_parameters()
-     )
 
         paginator = StandardPagination()
 
@@ -437,14 +444,14 @@ class TestViewSet(ViewSet):
 
         search = request.GET.get("search")
 
+        queryset = TestService.get_all_tests()
+
         if search:
             queryset = queryset.filter(
             Q(test_code__icontains=search) |
             Q(test_name__icontains=search) |
             Q(print_name__icontains=search)
         )
-
-        queryset = TestService.get_all_tests()
 
         paginator = StandardPagination()
 
@@ -570,12 +577,12 @@ class PathologyProfileViewSet(ViewSet):
 
         search = request.GET.get("search")
 
+        queryset = PathologyProfileService.get_all_profiles()
+
         if search:
             queryset = queryset.filter(
             Q(service_name__icontains=search)
         )
-
-        queryset = PathologyProfileService.get_all_profiles()
 
         paginator = StandardPagination()
 
@@ -1967,8 +1974,7 @@ class TestTemplateLinkViewSet(ViewSet):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
-from .services.shipment_services import (
+from restapi.services.shipment_services import (
     create_patient,
     get_all_patients,
     create_pending_shipment,
@@ -2020,28 +2026,44 @@ class PatientView(APIView):
 # =========================================
 # PENDING SHIPMENT VIEW
 # =========================================
-
-class PendingShipmentView(APIView):
+class PendingShipmentAPIView(APIView):
 
     def get(self, request):
 
+        from restapi.models import ShipmentShipped as ShipmentShippedModel
+        # Get IDs of pending shipments already moved to shipped
+        shipped_pending_ids = set(
+            ShipmentShippedModel.objects.values_list('pending_shipment_id', flat=True)
+        )
+
         shipments = get_all_pending_shipments()
 
-        data = []
+        response = []
 
         for item in shipments:
-            data.append({
+            # Skip items already shipped
+            if item.id in shipped_pending_ids:
+                continue
+            patient = item.patient
+            response.append({
                 "id": item.id,
-                "order_date": item.order_date,
+                "order_date": str(item.order_date) if item.order_date else None,
                 "sample_no": item.sample_no,
                 "sample_type": item.sample_type,
                 "test_code": item.test_code,
                 "test_name": item.test_name,
                 "service_name": item.service_name,
-                "patient": item.patient.patient_name
+                "patient": {
+                    "id": patient.id,
+                    "name": patient.patient_name,
+                    "age": patient.age,
+                    "patient_code": patient.mrn,
+                    "gender": patient.sex,
+                } if patient else None,
+                "created_at": str(item.created_at) if hasattr(item, 'created_at') else None,
             })
 
-        return Response(data)
+        return Response(response)
 
     def post(self, request):
 
@@ -2089,7 +2111,7 @@ class ScheduleShippingView(APIView):
         return Response(
             {
                 "message": "Schedule shipping created successfully",
-                "id": schedule.id
+                "id": schedule.id,
             },
             status=status.HTTP_201_CREATED
         )
@@ -2135,13 +2157,26 @@ class ShipmentShippedView(APIView):
         data = []
 
         for item in shipments:
+            pending = item.pending_shipment
+            patient = pending.patient if pending else None
             data.append({
                 "id": item.id,
                 "shipment_no": item.shipment_no,
-                "ship_date": item.ship_date,
-                "sample_no": item.pending_shipment.sample_no,
-                "patient": item.pending_shipment.patient.patient_name,
-                "ship_to": item.ship_to
+                "ship_date": str(item.ship_date) if item.ship_date else None,
+                "ship_to": item.ship_to,
+                "pending_shipment": {
+                    "sample_no": pending.sample_no if pending else None,
+                    "sample_type": pending.sample_type if pending else None,
+                    "test_code": pending.test_code if pending else None,
+                    "test_name": pending.test_name if pending else None,
+                    "service_name": pending.service_name if pending else None,
+                    "patient": {
+                        "name": patient.patient_name,
+                        "age": patient.age,
+                        "patient_code": patient.mrn,
+                        "gender": patient.sex,
+                    } if patient else None,
+                } if pending else None,
             })
 
         return Response(data)
@@ -2191,7 +2226,7 @@ class ShipmentReceivedView(APIView):
                 "id": item.id,
                 "received_no": item.received_no,
                 "receive_date": item.receive_date,
-                "shipment_no": item.shipped_shipment.shipment_no,
+               "shipment_no": item.shipped_shipment.shipment_no if item.shipped_shipment else None,
                 "status": item.status,
                 "result": item.result
             })
@@ -2222,7 +2257,7 @@ class ActivityLogsView(APIView):
             })
 
         return Response(data)
-        return Response(data)
+
     
 
 # =========================================
@@ -2243,7 +2278,7 @@ from django.forms.models import model_to_dict
 
 from restapi.models.receive_model import ReceiveSample
 from restapi.serializers.receive_serializer import ReceiveSampleSerializer
-from restapi.models.shipment_received import ShipmentReceived
+from restapi.models.shipment import ShipmentShipped, ShipmentReceived
 
 
 logger = logging.getLogger(__name__)
@@ -2547,6 +2582,85 @@ class ShipmentReceivedCreateAPIView(APIView):
                 {"error": "Internal Server Error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+# =====================================================
+# SHIPPED TAB API
+# =====================================================
+
+class ReceiveShippedTabAPIView(APIView):
+
+    def get(self, request):
+        try:
+            queryset = ShipmentShipped.objects.filter(
+                pending_shipment__status="Completed"
+            ).order_by("-id")
+
+            data = []
+
+            for item in queryset:
+                pending = item.pending_shipment
+
+                data.append({
+                    "id": item.id,
+                    "shipment_no": item.shipment_no,
+                    "ship_date": item.ship_date,
+                    "ship_to": item.ship_to,
+                    "sample_no": pending.sample_no if pending else None,
+                    "sample_type": pending.sample_type if pending else None,
+                    "test_code": pending.test_code if pending else None,
+                    "test_name": pending.test_name if pending else None,
+                    "service_name": pending.service_name if pending else None,
+                    "status": "Completed"
+                })
+
+            return Response({
+                "message": "Shipped samples fetched successfully",
+                "data": data
+            }, status=status.HTTP_200_OK)
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# =====================================================
+# CONVERT SHIPPED TO RECEIVED API
+# =====================================================
+
+class ConvertShippedToReceivedAPIView(APIView):
+
+    def post(self, request, shipment_id):
+        try:
+            shipment = get_object_or_404(
+                ShipmentShipped,
+                id=shipment_id
+            )
+
+            pending = shipment.pending_shipment
+
+            receive_sample = ReceiveSample.objects.create(
+                ship_date=shipment.ship_date.date(),
+                ship_time=shipment.ship_date.time(),
+                shipment_no=shipment.shipment_no,
+                specimen_no=pending.sample_no if pending else "",
+                specimen_type=pending.sample_type if pending else "",
+                test_code=pending.test_code if pending else "",
+                test_name=pending.test_name if pending else "",
+                service_name=pending.service_name if pending else "",
+                patient_name=str(pending.patient) if pending and pending.patient else "",
+                patient_age=0,
+                patient_gender="",
+                patient_code="",
+                status="Done"
+            )
+
+            serializer = ReceiveSampleSerializer(receive_sample)
+
+            return Response({
+                "message": "Sample moved to received successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response({"error": "Shipment not found or Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # Added Receive section views
 
 from rest_framework.views import APIView
@@ -2570,3 +2684,334 @@ class PathologyOrdersAPIView(APIView):
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from restapi.services.laboratory_test_service import (
+    LaboratoryTestService
+)
+
+
+class LaboratoryTestAPIView(APIView):
+
+    def get(self, request):
+
+        data = LaboratoryTestService.get_laboratory_tests(
+            request.query_params
+        )
+
+        return Response(data)
+
+
+
+#Result Entry 
+class ResultEntryPendingSamplesAPIView(APIView):
+    def get(self, request):
+        samples = ReceiveSample.objects.filter(status="Received", is_deleted=False)
+        data = []
+
+        for item in samples:
+            data.append({
+                "id": item.id,
+                "shipment_no": item.shipment_no,
+                "specimen_no": item.specimen_no,
+                "patient_name": item.patient_name,
+                "test_name": item.test_name,
+                "status": item.status
+            })
+
+        return Response(data)
+
+
+class ResultEntryCreateAPIView(APIView):
+    def post(self, request):
+        serializer = ResultEntrySerializer(data=request.data)
+
+        if serializer.is_valid():
+            result = serializer.save()
+            return Response({
+                "message": "Result entry created successfully",
+                "data": ResultEntrySerializer(result).data
+            }, status=201)
+
+        return Response(serializer.errors, status=400)
+
+
+class ResultEntryListAPIView(APIView):
+    def get(self, request):
+        results = ResultEntry.objects.filter(is_deleted=False).order_by("-id")
+        serializer = ResultEntrySerializer(results, many=True)
+        return Response(serializer.data)
+
+
+class ResultEntryCompleteAPIView(APIView):
+    def post(self, request, result_id):
+        result = ResultEntry.objects.get(id=result_id, is_deleted=False)
+        result.result_status = "Completed"
+        result.save()
+
+        return Response({
+            "message": "Result completed successfully",
+            "data": ResultEntrySerializer(result).data
+        })
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from restapi.models.collection import Collection
+
+from restapi.selectors.collection_selector import (
+    get_collection_by_id,
+    get_collections,
+)
+
+from restapi.serializers.collection_serializer import (
+    ChangeCollectionAgencySerializer,
+    CollectionSerializer,
+    GenerateCollectionBarcodeSerializer,
+    UpdateCollectionStatusSerializer,
+)
+
+from restapi.services.collection_service import (
+    change_collection_agency,
+    create_collection,
+    generate_collection_identifiers,
+    update_collection_status,
+)
+
+from restapi.workflows.order_workflow import (
+    InvalidStatusTransitionError,
+)
+
+import requests
+from django.conf import settings
+
+class VidaiOrdersView(APIView):
+
+    def get(self, request):
+        try:
+            from restapi.services.collection_service import fetch_vidai_orders
+            data = fetch_vidai_orders(
+                limit=request.query_params.get("limit", 10),
+                offset=request.query_params.get("offset", 0),
+            )
+        except Exception as error:
+            return Response(
+                {"detail": f"Failed to fetch orders from Vidai. {str(error)}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(
+            data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class VidaiOrderDetailView(APIView):
+
+    def get(self, request, order_id):
+        try:
+            from restapi.services.collection_service import fetch_vidai_order_detail
+            data = fetch_vidai_order_detail(order_id=order_id)
+        except Exception as error:
+            return Response(
+                {"detail": f"Failed to fetch order from Vidai. {str(error)}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        # Enrich each invoice_item with pathology collection data
+        for item in data.get("invoice_items", []):
+            service_id = item.get("test_service_id")
+
+            # Get collection record if exists
+            collection = Collection.objects.filter(
+                work_order_id=order_id,
+                test_service_id=service_id,
+            ).first()
+
+            if collection:
+                item["specimen_no"] = collection.specimen_no
+                item["barcode_value"] = collection.barcode_value
+                item["collection_status"] = collection.status
+                item["collection_date"] = collection.collection_date
+                item["collection_time"] = str(collection.collection_time) if collection.collection_time else None
+                item["test_type"] = collection.test_type
+                item["agency_name"] = collection.agency.agency_name if collection.agency else None
+            else:
+                item["specimen_no"] = None
+                item["barcode_value"] = None
+                item["collection_status"] = "PENDING"
+                item["collection_date"] = None
+                item["collection_time"] = None
+                item["test_type"] = None
+                item["agency_name"] = None
+
+            # Enrich with config data from Test model
+            from restapi.services.collection_service import resolve_test_from_service_id
+            test = resolve_test_from_service_id(service_id) if service_id else None
+
+            if test:
+                item["test_code"] = test.test_code
+                item["service_name"] = test.service_name
+                
+
+                item["tube_type"] = test.tube_name.tube_name if test.tube_name else None
+                item["sample_type"] = (
+                    test.test_samples.filter(is_deleted=False)
+                    .first()
+                    .sample.sample_name
+            if test.test_samples.filter(is_deleted=False).exists()
+            else None
+    )
+            else:
+                item["test_code"] = None
+                item["service_name"] = None
+                item["tube_type"] = None
+                item["sample_type"] = None
+
+        return Response(data, status=status.HTTP_200_OK)
+    
+class CollectionListCreateView(APIView):
+    def get(self, request):
+        collections = get_collections(
+            work_order_id=request.query_params.get("work_order_id"),
+            patient_id=request.query_params.get("patient_id"),
+            test_type=request.query_params.get("test_type"),
+            status=request.query_params.get("status"),
+            agency_id=request.query_params.get("agency_id"),
+            date_from=request.query_params.get("date_from"),
+            date_to=request.query_params.get("date_to"),
+        )
+        serializer = CollectionSerializer(collections, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = CollectionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        collection = create_collection(**serializer.validated_data)
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CollectionDetailView(APIView):
+    def get(self, request, collection_id):
+        try:
+            collection = get_collection_by_id(collection_id)
+        except Collection.DoesNotExist:
+            return Response(
+                {"detail": "Collection not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class GenerateCollectionBarcodeView(APIView):
+    def post(self, request):
+        serializer = GenerateCollectionBarcodeSerializer(
+            generate_collection_identifiers()
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdateCollectionStatusView(APIView):
+    def patch(self, request, collection_id):
+        serializer = UpdateCollectionStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            collection = update_collection_status(
+                collection_id=collection_id,
+                new_status=serializer.validated_data["new_status"],
+            )
+        except Collection.DoesNotExist:
+            return Response(
+                {"detail": "Collection not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except InvalidStatusTransitionError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangeCollectionAgencyView(APIView):
+    def patch(self, request, collection_id):
+        serializer = ChangeCollectionAgencySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            collection = change_collection_agency(
+                collection_id=collection_id,
+                new_agency_id=serializer.validated_data["new_agency_id"],
+                reason=serializer.validated_data["reason"],
+            )
+        except Collection.DoesNotExist:
+            return Response(
+                {"detail": "Collection not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ObjectDoesNotExist:
+            return Response(
+                {"detail": "Agency not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ValueError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            CollectionSerializer(collection).data,
+            status=status.HTTP_200_OK,
+        )
+
+# ==================================
+# Parameter Reference Range Views
+# ==================================
+
+class ReferenceRangeListCreateView(APIView):
+
+    def post(self, request, parameter_id):
+        parameter = get_object_or_404(Parameter, pk=parameter_id)
+        serializer = ParameterReferenceRangeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(parameter=parameter)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ReferenceRangeDetailView(APIView):
+
+    def put(self, request, parameter_id, pk):
+        instance = get_object_or_404(
+            ParameterReferenceRange, pk=pk, parameter=parameter_id
+        )
+        serializer = ParameterReferenceRangeSerializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, parameter_id, pk):
+        instance = get_object_or_404(
+            ParameterReferenceRange, pk=pk, parameter=parameter_id
+        )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

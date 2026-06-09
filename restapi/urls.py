@@ -18,8 +18,9 @@ from restapi.views import (
     AgencyClinicViewSet,
     TestParameterLinkViewSet,
     TestSampleLinkViewSet,
-    TestTemplateLinkViewSet
+    TestTemplateLinkViewSet,
 )
+from .views import ReferenceRangeListCreateView, ReferenceRangeDetailView
 
 router = DefaultRouter()
 
@@ -113,7 +114,7 @@ from django.urls import path
 
 from .views import (
     PatientView,
-    PendingShipmentView,
+    PendingShipmentAPIView,
     ScheduleShippingView,
     MoveToShippedView,
     ShipmentShippedView,
@@ -131,7 +132,26 @@ from .views import (
     ActiveSamplesAPIView,
     DeletedSamplesAPIView,
     ShipmentReceivedCreateAPIView,
+    PendingShipmentAPIView,
+    ReceiveShippedTabAPIView,
+    ConvertShippedToReceivedAPIView,
     PathologyOrdersAPIView,
+
+    #RESULT ENTRY LINKS
+
+    ResultEntryPendingSamplesAPIView,
+    ResultEntryCreateAPIView,
+    ResultEntryListAPIView,
+    ResultEntryCompleteAPIView,
+
+    # ORDERS MODULE IMPORTS
+    VidaiOrdersView,
+    VidaiOrderDetailView,
+    CollectionListCreateView,
+    GenerateCollectionBarcodeView,
+    CollectionDetailView,
+    UpdateCollectionStatusView,
+    ChangeCollectionAgencyView,
 )
 
 urlpatterns = router.urls + [
@@ -144,16 +164,13 @@ urlpatterns = router.urls + [
     ),
 
     # Pending Shipment APIs
-    path('pending-shipment/', PendingShipmentView.as_view(), name='pending-shipment'),
+    path('pending-shipment/', PendingShipmentAPIView.as_view(), name='pending-shipment'),
    
     # ScheduleShipping
     path('schedule-shipping/',ScheduleShippingView.as_view(),name='schedule-shipping'),
     
-    path(
-        'pending-shipment/',
-        PendingShipmentView.as_view(),
-        name='pending-shipment'
-    ),
+    
+    
 
     # Move Pending → Shipped
     path(
@@ -190,6 +207,10 @@ urlpatterns = router.urls + [
         name='activity-logs'
     ),
 
+#Updated upstream
+    # =====================================================
+    # RECEIVE MODULE APIS
+    # =====================================================
     # ScheduleShipping
     path(
         'schedule-shipping/',
@@ -197,68 +218,156 @@ urlpatterns = router.urls + [
         name='schedule-shipping'
     ),
 
-    # =====================================================
-    # RECEIVE MODULE APIS
-    # =====================================================
+# =====================================================
+# RECEIVE MODULE APIS
+# =====================================================
+#Stashed changes
 
-    path(
-        "create-sample/",
-        ReceiveSampleCreateAPIView.as_view(),
-        name="create-sample"
-    ),
+path(
+    "create-sample/",
+    ReceiveSampleCreateAPIView.as_view(),
+    name="create-sample"
+),
 
-    path(
-        "samples/",
-        ReceiveSampleListAPIView.as_view(),
-        name="sample-list"
-    ),
+path(
+    "samples/",
+    ReceiveSampleListAPIView.as_view(),
+    name="sample-list"
+),
 
-    path(
-        "receive-sample/<int:sample_id>/",
-        ReceiveSampleAPIView.as_view(),
-        name="receive-sample"
-    ),
+path(
+    "receive-sample/<int:sample_id>/",
+    ReceiveSampleAPIView.as_view(),
+    name="receive-sample"
+),
 
-    path(
-        "reject-sample/<int:sample_id>/",
-        RejectSampleAPIView.as_view(),
-        name="reject-sample"
-    ),
+path(
+    "reject-sample/<int:sample_id>/",
+    RejectSampleAPIView.as_view(),
+    name="reject-sample"
+),
 
-    path(
-        "receive-activity-logs/",
-        ReceiveActivityLogsAPIView.as_view(),
-        name="receive-activity-logs"
-    ),
+path(
+    "receive-activity-logs/",
+    ReceiveActivityLogsAPIView.as_view(),
+    name="receive-activity-logs"
+),
 
-    path(
-        "delete-sample/<int:sample_id>/",
-        DeleteSampleAPIView.as_view(),
-        name="delete-sample"
-    ),
+path(
+    "delete-sample/<int:sample_id>/",
+    DeleteSampleAPIView.as_view(),
+    name="delete-sample"
+),
 
-    path(
-        "active-samples/",
-        ActiveSamplesAPIView.as_view(),
-        name="active-samples"
-    ),
+path(
+    "active-samples/",
+    ActiveSamplesAPIView.as_view(),
+    name="active-samples"
+),
 
-    path(
-        "deleted-samples/",
-        DeletedSamplesAPIView.as_view(),
-        name="deleted-samples"
-    ),
+path(
+    "deleted-samples/",
+    DeletedSamplesAPIView.as_view(),
+    name="deleted-samples"
+),
 
-    path(
-        "create-shipment-received/",
-        ShipmentReceivedCreateAPIView.as_view(),
-        name="create-shipment-received"
-    ),
+path(
+    "create-shipment-received/",
+    ShipmentReceivedCreateAPIView.as_view(),
+    name="create-shipment-received"
+),
 
-    path(
-        "pathology-orders/",
-        PathologyOrdersAPIView.as_view(),
-        name="pathology-orders"
-    ),
+path(
+    "pending-shipment/",
+    PendingShipmentAPIView.as_view(),
+    name="pending-shipment"
+),
+
+path(
+    "receive/shipped-tab/",
+    ReceiveShippedTabAPIView.as_view(),
+    name="receive-shipped-tab"
+),
+
+path(
+    "receive/convert/<int:shipment_id>/",
+    ConvertShippedToReceivedAPIView.as_view(),
+    name="convert-shipped-to-received"
+),
+
+path(
+    "pathology-orders/",
+    PathologyOrdersAPIView.as_view(),
+    name="pathology-orders"
+),
+
+path(
+    "laboratory-test/",
+    LaboratoryTestAPIView.as_view(),
+    name="laboratory-test"
+),
+
+#Added Receive section APIs
+
+path("result-entry/pending-samples/", ResultEntryPendingSamplesAPIView.as_view()),
+path("result-entry/create/", ResultEntryCreateAPIView.as_view()),
+path("result-entry/list/", ResultEntryListAPIView.as_view()),
+path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_view()),
 ]
 #Added Receive section APIs
+
+# =====================================================
+# ORDERS MODULE APIS
+# =====================================================
+
+urlpatterns += [
+     path(
+        "parameters/<uuid:parameter_id>/reference-ranges/",
+        ReferenceRangeListCreateView.as_view(),
+        name="reference-range-create",
+    ),
+    path(
+        "parameters/<uuid:parameter_id>/reference-ranges/<int:pk>/",
+        ReferenceRangeDetailView.as_view(),
+        name="reference-range-detail",
+    ),
+
+    # Orders list + detail — proxied from Vidai EMR
+    path(
+        "orders/",
+        VidaiOrdersView.as_view(),
+        name="vidai-orders-list",
+    ),
+    path(
+        "orders/<int:order_id>/",
+        VidaiOrderDetailView.as_view(),
+        name="vidai-order-detail",
+    ),
+
+    # Collections
+    path(
+        "collections/",
+        CollectionListCreateView.as_view(),
+        name="collection-list-create",
+    ),
+    path(
+        "collections/generate-barcode/",
+        GenerateCollectionBarcodeView.as_view(),
+        name="collection-generate-barcode",
+    ),
+    path(
+        "collections/<uuid:collection_id>/",
+        CollectionDetailView.as_view(),
+        name="collection-detail",
+    ),
+    path(
+        "collections/<uuid:collection_id>/status/",
+        UpdateCollectionStatusView.as_view(),
+        name="collection-status-update",
+    ),
+    path(
+        "collections/<uuid:collection_id>/change-agency/",
+        ChangeCollectionAgencyView.as_view(),
+        name="collection-change-agency",
+    ),
+]

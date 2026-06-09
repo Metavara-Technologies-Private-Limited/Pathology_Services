@@ -1,13 +1,27 @@
 from django.contrib import admin
-from .models import*
+
+from .models import *
+
 from restapi.models.test_template import (
     Template,
 )
-from restapi.models.test_test import Test
-from restapi.models.test_category import Category
-from restapi.models import Pathology_profile
 
-# Register your models here.
+from restapi.models.test_test import (
+    Test,
+    TestParameter,
+    TestTemplate,
+    TestSample,
+)
+
+from restapi.models.test_category import (
+    Category,
+)
+
+from restapi.models import (
+    Pathology_profile,
+)
+
+# Configuration Masters
 admin.site.register(Agency)
 admin.site.register(Machine)
 admin.site.register(Pathology_profile)
@@ -23,10 +37,13 @@ admin.site.register(TestTemplate)
 admin.site.register(TestSample)
 admin.site.register(Clinic)
 admin.site.register(AgencyClinic)
-from .models import Patient,PendingShipment, ShipmentShipped, ShipmentReceived,ActivityLogs
+
+# Shipment Module
 admin.site.register(Patient)
 admin.site.register(PendingShipment)
 admin.site.register(ShipmentShipped)
 admin.site.register(ShipmentReceived)
 admin.site.register(ActivityLogs)
 
+# Collection Module
+admin.site.register(Collection)

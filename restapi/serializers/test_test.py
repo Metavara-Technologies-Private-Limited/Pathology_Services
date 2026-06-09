@@ -1,5 +1,3 @@
-from tkinter.filedialog import test
-
 import attrs
 from rest_framework import serializers
 
