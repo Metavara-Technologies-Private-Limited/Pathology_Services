@@ -1,9 +1,5 @@
 from django.db import models
-
 from restapi.models.agency import Agency
-from restapi.models.pathology_profile import (
-    Pathology_profile
-)
 
 
 class AgencyService(models.Model):
@@ -14,10 +10,9 @@ class AgencyService(models.Model):
         related_name='agency_services'
     )
 
-    profile = models.ForeignKey(
-        Pathology_profile,
-        on_delete=models.CASCADE,
-        related_name='profile_agencies'
+    service_name = models.CharField(
+        max_length=255,
+        default=""
     )
 
     rate = models.DecimalField(
@@ -46,8 +41,7 @@ class AgencyService(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-
         return (
             f"{self.agency.agency_name} - "
-            f"{self.profile.service_name}"
+            f"{self.service_name}"
         )
