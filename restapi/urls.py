@@ -19,6 +19,14 @@ from restapi.views import (
     TestParameterLinkViewSet,
     TestSampleLinkViewSet,
     TestTemplateLinkViewSet,
+    AuthorizationListAPIView,
+    AuthorizationCreateAPIView,
+    ApproveResultAPIView,
+    RejectAuthorizationAPIView,
+    DeleteAuthorizationAPIView,
+    AuthorizationLogsAPIView,
+    DeletedAuthorizationAPIView,
+    
 )
 from .views import ReferenceRangeListCreateView, ReferenceRangeDetailView
 
@@ -375,3 +383,45 @@ urlpatterns += [
         name="collection-change-agency",
     ),
 ]
+
+#Authorization Apis
+urlpatterns += [
+
+    path(
+        "authorization/",
+        AuthorizationListAPIView.as_view(),
+    ),
+
+    path(
+        "create-authorization/",
+        AuthorizationCreateAPIView.as_view(),
+    ),
+
+    path(
+        "approve-result/<int:pk>/",
+        ApproveResultAPIView.as_view(),
+    ),
+
+    path(
+        "reject-authorization/<int:pk>/",
+        RejectAuthorizationAPIView.as_view(),
+    ),
+
+    path(
+        "delete-authorization/<int:pk>/",
+        DeleteAuthorizationAPIView.as_view(),
+    ),
+
+    path(
+        "authorization-logs/",
+        AuthorizationLogsAPIView.as_view(),
+    ),
+
+    path(
+        "deleted-authorization/",
+        DeletedAuthorizationAPIView.as_view(),
+    ),
+
+]
+
+

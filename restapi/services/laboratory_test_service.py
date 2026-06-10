@@ -2,10 +2,11 @@ import time
 import threading
 import requests
 from django.conf import settings
+from typing import Optional
 
 
 class LaboratoryTestService:
-    _token: str | None = None
+    _token: Optional[str] = None
     _token_lock = threading.Lock()
 
     @classmethod
