@@ -152,6 +152,7 @@ from .views import (
     ResultEntryListAPIView,
     ResultEntryUpdateAPIView,
     ResultEntryCompleteAPIView,
+    ResultEntryUpdateAPIView,
 
     # ORDERS MODULE IMPORTS
     VidaiOrdersView,
@@ -325,6 +326,7 @@ path("result-entry/<int:result_id>/", ResultEntryUpdateAPIView.as_view()),
 path("result-entry/update/<int:result_id>/", ResultEntryUpdateAPIView.as_view()),
 path("result-entry/<int:result_id>/update/", ResultEntryUpdateAPIView.as_view()),
 path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_view()),
+path("result-entry/update/<int:result_id>/", ResultEntryUpdateAPIView.as_view()),
 ]
 #Added Receive section APIs
 

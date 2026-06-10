@@ -2784,6 +2784,26 @@ class ResultEntryCompleteAPIView(APIView):
             "message": "Result completed successfully",
             "data": ResultEntrySerializer(result).data
         })
+    
+class ResultEntryUpdateAPIView(APIView):
+    def put(self, request, result_id):
+        try:
+            result = ResultEntry.objects.get(id=result_id, is_deleted=False)
+        except ResultEntry.DoesNotExist:
+            return Response({"error": "Result entry not found"}, status=404)
+
+        serializer = ResultEntrySerializer(result, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Result entry updated successfully",
+                "data": serializer.data
+            }, status=200)
+
+        return Response(serializer.errors, status=400)
+    
+    
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
