@@ -2746,6 +2746,34 @@ class ResultEntryListAPIView(APIView):
         return Response(serializer.data)
 
 
+class ResultEntryUpdateAPIView(APIView):
+    def _update(self, request, result_id):
+        try:
+            result = ResultEntry.objects.get(id=result_id, is_deleted=False)
+        except ResultEntry.DoesNotExist:
+            return Response({"message": "Result entry not found"}, status=404)
+
+        serializer = ResultEntrySerializer(result, data=request.data, partial=True)
+        if serializer.is_valid():
+            updated = serializer.save()
+            return Response({
+                "message": "Result entry updated successfully",
+                "data": ResultEntrySerializer(updated).data,
+            }, status=200)
+
+        return Response(serializer.errors, status=400)
+
+    def patch(self, request, result_id):
+        return self._update(request, result_id)
+
+    def put(self, request, result_id):
+        return self._update(request, result_id)
+
+    # Backward compatible route if frontend posts to /update/.
+    def post(self, request, result_id):
+        return self._update(request, result_id)
+
+
 class ResultEntryCompleteAPIView(APIView):
     def post(self, request, result_id):
         result = ResultEntry.objects.get(id=result_id, is_deleted=False)

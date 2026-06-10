@@ -142,6 +142,7 @@ from .views import (
     ResultEntryPendingSamplesAPIView,
     ResultEntryCreateAPIView,
     ResultEntryListAPIView,
+    ResultEntryUpdateAPIView,
     ResultEntryCompleteAPIView,
 
     # ORDERS MODULE IMPORTS
@@ -312,6 +313,9 @@ path(
 path("result-entry/pending-samples/", ResultEntryPendingSamplesAPIView.as_view()),
 path("result-entry/create/", ResultEntryCreateAPIView.as_view()),
 path("result-entry/list/", ResultEntryListAPIView.as_view()),
+path("result-entry/<int:result_id>/", ResultEntryUpdateAPIView.as_view()),
+path("result-entry/update/<int:result_id>/", ResultEntryUpdateAPIView.as_view()),
+path("result-entry/<int:result_id>/update/", ResultEntryUpdateAPIView.as_view()),
 path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_view()),
 ]
 #Added Receive section APIs
