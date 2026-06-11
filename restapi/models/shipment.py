@@ -8,6 +8,8 @@ class PendingShipment(models.Model):
 #Updated upstream
 
 #Stashed changes
+
+#Stashed changes
     STATUS_CHOICES = [
         ('Completed', 'Completed'),
         ('Pending', 'Pending')
@@ -19,7 +21,8 @@ class PendingShipment(models.Model):
         choices=STATUS_CHOICES,
         default='Pending'
     )
-# Stashed changes
+
+ #Stashed changes
     scheduled_collection = models.ForeignKey(
         Collection,
         on_delete=models.CASCADE,
