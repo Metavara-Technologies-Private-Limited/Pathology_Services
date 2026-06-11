@@ -2375,7 +2375,7 @@ class ReceiveSampleAPIView(APIView):
             sample.accepted_by = request.data.get("accepted_by")
             sample.remark = request.data.get("remark")
             sample.sub_optimal = request.data.get("sub_optimal", False)
-            sample.shipment_received_id = request.data.get("shipment_received")
+            sample.shipment_id = request.data.get("shipment")
             sample.status = "Received"
 
             sample.save()
@@ -2592,7 +2592,8 @@ class ReceiveShippedTabAPIView(APIView):
     def get(self, request):
         try:
             queryset = ShipmentShipped.objects.filter(
-                pending_shipment__status="Completed"
+                pending_shipment__status="Completed",
+                received_records__isnull=True
             ).order_by("-id")
 
             data = []
@@ -2634,26 +2635,47 @@ class ConvertShippedToReceivedAPIView(APIView):
                 id=shipment_id
             )
 
-            pending = shipment.pending_shipment
+            if shipment.received_records.exists():
+                shipment_received = shipment.received_records.first()
+                receive_sample = shipment_received.receive_samples.filter(is_deleted=False).first()
+                if receive_sample:
+                    serializer = ReceiveSampleSerializer(receive_sample)
+                    return Response({
+                        "message": "Shipment already converted to received",
+                        "data": serializer.data
+                    }, status=status.HTTP_200_OK)
 
-            receive_sample = ReceiveSample.objects.create(
-                ship_date=shipment.ship_date.date(),
-                ship_time=shipment.ship_date.time(),
-                shipment_no=shipment.shipment_no,
-                specimen_no=pending.sample_no if pending else "",
-                specimen_type=pending.sample_type if pending else "",
-                test_code=pending.test_code if pending else "",
-                test_name=pending.test_name if pending else "",
-                service_name=pending.service_name if pending else "",
-                patient_name=str(pending.patient) if pending and pending.patient else "",
-                patient_age=0,
-                patient_gender="",
-                patient_code="",
-                status="Done"
+            pending = shipment.pending_shipment
+            patient = pending.patient if pending and pending.patient else None
+
+            shipment_received = ShipmentReceived.objects.create(
+                shipped_shipment=shipment,
+                receive_date=now(),
+                received_no=f"REC-{shipment.id}",
+                status="Accepted",
+                result="Done"
             )
 
-            serializer = ReceiveSampleSerializer(receive_sample)
+            receive_sample = ReceiveSample.objects.create(
+    shipment=shipment_received,
+    ship_date=shipment.ship_date.date() if shipment.ship_date else None,
+    ship_time=shipment.ship_date.time() if shipment.ship_date else None,
+    shipment_no=shipment.shipment_no,
+    specimen_no=pending.sample_no if pending else "",
+    specimen_type=pending.sample_type if pending else "",
+    test_code=pending.test_code if pending else "",
+    test_name=pending.test_name if pending else "",
+    service_name=pending.service_name if pending else "",
+    patient_name=patient.patient_name if patient else "",
+    patient_age=patient.age if patient else 0,
+    patient_gender=patient.sex if patient else "",
+    patient_code=patient.mrn if patient else "",
+    receive_date=now().date(),
+    receive_time=now().time(),
+    status="Shipped"
+)
 
+            serializer = ReceiveSampleSerializer(receive_sample)
             return Response({
                 "message": "Sample moved to received successfully",
                 "data": serializer.data
@@ -2661,7 +2683,50 @@ class ConvertShippedToReceivedAPIView(APIView):
 
         except Exception:
             logger.error(traceback.format_exc())
-            return Response({"error": "Shipment not found or Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": "Shipment not found or Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+# RESULT API IN RECEIVE MODULE
+class ReceiveToResultEntryAPIView(APIView):
+
+    def get(self, request):
+        try:
+            queryset = ReceiveSample.objects.filter(
+                status="Shipped",
+                is_deleted=False
+            ).order_by("-id")[:4]
+
+            data = []
+
+            for item in queryset:
+                data.append({
+                    "id": item.id,
+                    "shipment_no": item.shipment_no,
+                    "specimen_no": item.specimen_no,
+                    "specimen_type": item.specimen_type,
+                    "test_code": item.test_code,
+                    "test_name": item.test_name,
+                    "service_name": item.service_name,
+                    "patient_name": item.patient_name,
+                    "patient_age": item.patient_age,
+                    "patient_gender": item.patient_gender,
+                    "patient_code": item.patient_code,
+                    "status": item.status,
+                })
+
+            return Response({
+                "message": "Received samples fetched for Result Entry successfully",
+                "data": data
+            }, status=status.HTTP_200_OK)
+
+        except Exception:
+            logger.error(traceback.format_exc())
+            return Response(
+                {"error": "Internal Server Error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 # Added Receive section views
 
 from rest_framework.views import APIView

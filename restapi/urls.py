@@ -142,6 +142,7 @@ from .views import (
     ShipmentReceivedCreateAPIView,
     PendingShipmentAPIView,
     ReceiveShippedTabAPIView,
+    ReceiveToResultEntryAPIView,
     ConvertShippedToReceivedAPIView,
     PathologyOrdersAPIView,
 
@@ -231,8 +232,6 @@ urlpatterns = router.urls + [
 # =====================================================
 # RECEIVE MODULE APIS
 # =====================================================
-#Stashed changes
-
 path(
     "create-sample/",
     ReceiveSampleCreateAPIView.as_view(),
@@ -297,6 +296,11 @@ path(
     "receive/shipped-tab/",
     ReceiveShippedTabAPIView.as_view(),
     name="receive-shipped-tab"
+),
+path(
+    "receive/result-entry/",
+    ReceiveToResultEntryAPIView.as_view(),
+    name="receive-result-entry"
 ),
 
 path(

@@ -104,6 +104,9 @@ def move_to_shipped(pending_id, ship_to, ship_by):
     pending.status = "Completed"
     pending.save()
 
+    pending.status = "Completed"
+    pending.save()
+
     shipped = ShipmentShipped.objects.create(
         pending_shipment=pending,
         shipment_no=shipment_no,
