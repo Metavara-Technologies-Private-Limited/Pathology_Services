@@ -2806,7 +2806,28 @@ class ResultEntryCreateAPIView(APIView):
 
 class ResultEntryListAPIView(APIView):
     def get(self, request):
-        results = ResultEntry.objects.filter(is_deleted=False).order_by("-id")
+
+        receive_samples = ReceiveSample.objects.filter(
+            status="Shipped",
+            is_deleted=False
+        ).order_by("-id")[:4]
+
+        for sample in receive_samples:
+            ResultEntry.objects.get_or_create(
+                receive_sample=sample,
+                defaults={
+                    "parameter_name": sample.test_name,
+                    "result_value": "",
+                    "remarks": "",
+                    "entered_by": "",
+                    "result_status": "Pending"
+                }
+            )
+
+        results = ResultEntry.objects.filter(
+            is_deleted=False
+        ).order_by("-id")
+
         serializer = ResultEntrySerializer(results, many=True)
         return Response(serializer.data)
 
@@ -2868,6 +2889,22 @@ class ResultEntryUpdateAPIView(APIView):
 
         return Response(serializer.errors, status=400)
     
+class AuthorizationPendingResultsAPIView(APIView):
+
+    def get(self, request):
+
+        results = ResultEntry.objects.filter(
+            result_status="Completed",
+            is_deleted=False
+        ).order_by("-id")
+
+        serializer = ResultEntrySerializer(results, many=True)
+
+        return Response({
+            "message": "Completed results fetched successfully",
+            "data": serializer.data
+        }, status=200)
+#above are the resukt entry apis  
     
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
