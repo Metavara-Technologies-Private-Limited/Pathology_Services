@@ -331,6 +331,10 @@ path("result-entry/update/<int:result_id>/", ResultEntryUpdateAPIView.as_view())
 path("result-entry/<int:result_id>/update/", ResultEntryUpdateAPIView.as_view()),
 path("result-entry/<int:result_id>/complete/", ResultEntryCompleteAPIView.as_view()),
 path("result-entry/update/<int:result_id>/", ResultEntryUpdateAPIView.as_view()),
+path(
+    "authorization/pending-results/",
+    AuthorizationPendingResultsAPIView.as_view()
+),
 ]
 #Added Receive section APIs
 
