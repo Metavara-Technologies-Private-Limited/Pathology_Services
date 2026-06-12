@@ -8,12 +8,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
     no_of_tests = serializers.SerializerMethodField()
     
-    tests = serializers.PrimaryKeyRelatedField(
-        queryset=Test.objects.all(),
-        many=True,
-        write_only=True,
-        required=False
-)
+    tests = serializers.SerializerMethodField()  # ← change to SerializerMethodField
+
     class Meta:
         model = Category
         fields = [
@@ -30,14 +26,21 @@ class CategorySerializer(serializers.ModelSerializer):
 
     def get_no_of_tests(self, obj):
         return obj.tests.count()
-    
+
+    def get_tests(self, obj):
+     return [str(t.id) for t in obj.tests.all()]
+
     def create(self, validated_data):
-        return CategoryService.create_category(
-        validated_data
-    )
+        # tests comes from request data, not from get_tests
+        tests_data = self.initial_data.get('tests', [])
+        from restapi.models.test_test import Test
+        tests = Test.objects.filter(id__in=tests_data)
+        validated_data['tests'] = list(tests)
+        return CategoryService.create_category(validated_data)
 
     def update(self, instance, validated_data):
-        return CategoryService.update_category(
-        instance,
-        validated_data
-    )
+        tests_data = self.initial_data.get('tests', [])
+        from restapi.models.test_test import Test
+        tests = Test.objects.filter(id__in=tests_data)
+        validated_data['tests'] = list(tests)
+        return CategoryService.update_category(instance, validated_data)

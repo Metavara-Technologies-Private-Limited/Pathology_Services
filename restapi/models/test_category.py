@@ -9,6 +9,12 @@ class Category(models.Model):
         editable=False
     )
 
+    tests = models.ManyToManyField(
+        'restapi.Test',
+        blank=True,
+        related_name='categories'
+    )
+
     category_code = models.CharField(
         max_length=50,
         unique=True
