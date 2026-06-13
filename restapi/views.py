@@ -91,7 +91,7 @@ class SampleViewSet(viewsets.ViewSet):
         sample = sample_service.get_sample(pk)
         sample_service.delete_sample(sample)
         return Response(status=204)
-    
+
 # ==================================
 # Tube_(Master)_ViewSet
 # ==================================
@@ -149,9 +149,9 @@ class TubeViewSet(ViewSet):
         tube = get_object_or_404(Tube, pk=pk)
         tube.delete()
         return Response(status=204)
-    
 
-#--------------------------------------------------------
+
+# --------------------------------------------------------
 
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -434,7 +434,7 @@ class TemplateViewSet(ViewSet):
 # ==================================
 # Test_ViewSet
 # ==================================
-    
+
 from restapi.serializers.test_test import TestSerializer
 from restapi.services.test_test_service import TestService
 
@@ -545,7 +545,7 @@ class TestViewSet(ViewSet):
             {"message": "Test deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
 class CategoryViewSet(ModelViewSet):
 
     serializer_class = CategorySerializer
@@ -693,10 +693,10 @@ class PathologyProfileViewSet(ViewSet):
             {"message": "Profile deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
 # ==================================
 # Machine_(Master)_ViewSet
-# ==================================    
+# ==================================
 
 class MachineViewSet(ViewSet):
 
@@ -820,7 +820,7 @@ class MachineViewSet(ViewSet):
             {"message": "Machine deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
 # ==================================
 # Machine_Parameter_ViewSet
 # ==================================
@@ -964,7 +964,7 @@ class MachineParameterViewSet(ViewSet):
             {"message": "Deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
 
 # ==================================
 # CLinic (Master)_ViewSet
@@ -1091,12 +1091,12 @@ class ClinicViewSet(ViewSet):
             {"message": "Deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
 
 # ==================================
 # Agency (Master)_ViewSet
 # ==================================
-    
+
 from restapi.serializers.agency_clinic import (AgencyClinicSerializer)
 from restapi.services.agency_clinic_service import (AgencyClinicService)
 
@@ -1512,7 +1512,7 @@ class AgencyServiceViewSet(ViewSet):
             {"message": "Deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-    
+
 
 # ==================================
 # Test_Parameter_Link_ViewSet
@@ -1669,7 +1669,7 @@ class TestParameterLinkViewSet(ViewSet):
 
 # ==================================
 # Test_Sample_Link_ViewSet
-# ==================================    
+# ==================================
 
 from restapi.serializers.test_sample_link import (
     TestSampleLinkSerializer
@@ -1821,7 +1821,7 @@ class TestSampleLinkViewSet(ViewSet):
         )
 # ==================================
 # Test_Template_Link_ViewSet
-# ================================== 
+# ==================================
 
 from restapi.serializers.test_template_link import (
     TestTemplateLinkSerializer
@@ -2259,7 +2259,6 @@ class ActivityLogsView(APIView):
 
         return Response(data)
 
-    
 
 # =========================================
 # FormulaValidation VIEW
@@ -2687,7 +2686,7 @@ class ConvertShippedToReceivedAPIView(APIView):
                 {"error": "Shipment not found or Internal Server Error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
 # RESULT API IN RECEIVE MODULE
 class ReceiveToResultEntryAPIView(APIView):
 
@@ -2770,8 +2769,7 @@ class LaboratoryTestAPIView(APIView):
         return Response(data)
 
 
-
-#Result Entry 
+# Result Entry
 class ResultEntryPendingSamplesAPIView(APIView):
     def get(self, request):
         samples = ReceiveSample.objects.filter(status="Received", is_deleted=False)
@@ -2810,7 +2808,7 @@ class ResultEntryListAPIView(APIView):
         receive_samples = ReceiveSample.objects.filter(
             status="Shipped",
             is_deleted=False
-        ).order_by("-id")[:4]
+        ).order_by("-id")
 
         for sample in receive_samples:
             ResultEntry.objects.get_or_create(
@@ -2866,11 +2864,148 @@ class ResultEntryCompleteAPIView(APIView):
         result.result_status = "Completed"
         result.save()
 
+        sample = result.receive_sample
+        Authorization.objects.get_or_create(
+        result_entry=result,
+        defaults={
+            "order_date": timezone.now().date(),
+            "order_time": timezone.now().time(),
+
+            "patient_name": sample.patient_name,
+            "patient_age": sample.patient_age,
+            "patient_gender": sample.patient_gender,
+
+            "patient_code": sample.patient_code,
+            "patient_type": "Registered",
+
+            "doctor_name": "N/A",
+            "bill_no": sample.shipment_no,
+
+            "no_of_orders": 1,
+            "test_name": sample.test_name,
+
+            "result_status": "Completed",
+            "authorization_status": "Pending"
+        }
+    )
+
         return Response({
             "message": "Result completed successfully",
             "data": ResultEntrySerializer(result).data
         })
-    
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
+from restapi.models.result_entry_model import ResultEntry
+from restapi.models.test_test import Test, TestParameter, TestTemplate
+
+
+class ResultEntryDetailsAPIView(APIView):
+
+    def get(self, request, result_id):
+
+        result = get_object_or_404(ResultEntry, id=result_id, is_deleted=False)
+
+        sample = result.receive_sample
+
+        test = Test.objects.filter(
+            test_code=sample.test_code,
+            is_deleted=False
+        ).first()
+
+        if not test:
+            test = Test.objects.filter(
+                test_name__icontains=sample.test_name,
+                is_deleted=False
+            ).first()
+
+        if not test:
+            return Response(
+                {
+                    "message": f"No Test configuration found for '{sample.test_name}'",
+                    "sample_id": sample.id,
+                    "test_code": sample.test_code,
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        response_data = {
+            "result_entry": {"id": result.id, "status": result.result_status},
+            "patient": {
+                "name": sample.patient_name,
+                "age": sample.patient_age,
+                "gender": sample.patient_gender,
+                "patient_code": sample.patient_code,
+            },
+            "test": {
+                "id": str(test.id),
+                "test_name": test.test_name,
+                "report_type": test.report_type,
+                "suggestion_note": test.suggestion_note,
+                "disclaimer": test.disclaimer,
+            },
+        }
+
+        if test.report_type == "PARAMETER":
+
+            parameters = []
+
+            test_parameters = (
+                TestParameter.objects.filter(test=test, is_deleted=False)
+                .select_related("parameter")
+                .prefetch_related("parameter__reference_ranges")
+            )
+
+            for tp in test_parameters:
+
+                parameter = tp.parameter
+
+                ref = parameter.reference_ranges.filter(is_deleted=False).first()
+
+                parameters.append(
+                    {
+                        "id": parameter.id,
+                        "parameter_name": parameter.parameter_name,
+                        "parameter_code": parameter.parameter_code,
+                        "unit": parameter.unit,
+                        "min_ref": ref.min_ref if ref else None,
+                        "max_ref": ref.max_ref if ref else None,
+                        "min_authz": ref.min_authz if ref else None,
+                        "max_authz": ref.max_authz if ref else None,
+                        "varying_reference_range": (
+                            ref.varying_reference_range if ref else None
+                        ),
+                    }
+                )
+
+            response_data["parameters"] = parameters
+
+        else:
+
+            templates = []
+
+            test_templates = TestTemplate.objects.filter(
+                test=test, is_deleted=False
+            ).select_related("template")
+
+            for tt in test_templates:
+
+                templates.append(
+                    {
+                        "id": tt.template.id,
+                        "template_name": tt.template.template_name,
+                        "template_text": tt.template.template_text,
+                        "template_json": tt.template.template_json,
+                    }
+                )
+
+            response_data["templates"] = templates
+
+        return Response(response_data)
+
+
 class ResultEntryUpdateAPIView(APIView):
     def put(self, request, result_id):
         try:
@@ -2888,7 +3023,7 @@ class ResultEntryUpdateAPIView(APIView):
             }, status=200)
 
         return Response(serializer.errors, status=400)
-    
+
 class AuthorizationPendingResultsAPIView(APIView):
 
     def get(self, request):
@@ -2904,8 +3039,8 @@ class AuthorizationPendingResultsAPIView(APIView):
             "message": "Completed results fetched successfully",
             "data": serializer.data
         }, status=200)
-#above are the resukt entry apis  
-    
+# above are the resukt entry apis
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
@@ -3023,7 +3158,7 @@ class VidaiOrderDetailView(APIView):
                 item["sample_type"] = None
 
         return Response(data, status=status.HTTP_200_OK)
-    
+
 class CollectionListCreateView(APIView):
     def get(self, request):
         collections = get_collections(
@@ -3168,7 +3303,7 @@ class ReferenceRangeDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-#Authorization views
+# Authorization views
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView

@@ -304,6 +304,11 @@ path(
 ),
 
 path(
+    "result-entry/<int:result_id>/details/",
+    ResultEntryDetailsAPIView.as_view()
+),
+
+path(
     "receive/convert/<int:shipment_id>/",
     ConvertShippedToReceivedAPIView.as_view(),
     name="convert-shipped-to-received"
