@@ -66,7 +66,22 @@ def fetch_vidai_order_detail(order_id: int) -> dict:
     response.raise_for_status()
     return response.json()
 
+def get_invoice_item(
+    order_data: dict,
+    invoice_item_id: int = None,
+    test_service_id: int = None,
+) -> dict:
+    for item in order_data.get("invoice_items", []):
+        if invoice_item_id and item.get("id") == invoice_item_id:
+            return item
+        if test_service_id and item.get("test_service_id") == test_service_id:
+            return item
 
+    raise ValueError(
+        f"No invoice item found for "
+        f"invoice_item_id={invoice_item_id} "
+        f"or test_service_id={test_service_id}"
+    )
 def resolve_test_from_service_id(service_id: int):
     from restapi.models.test_test import Test
     try:
@@ -107,15 +122,140 @@ def generate_collection_identifiers() -> dict:
 
 @transaction.atomic
 def create_collection(**validated_data) -> Collection:
+
     identifiers = generate_collection_identifiers()
 
-    # Auto-resolve test FK from test_service_id if provided
-    if "test_service_id" in validated_data and validated_data.get("test") is None:
+    work_order_id = validated_data.get("work_order_id")
+    test_service_id = validated_data.get("test_service_id")
+
+    if not work_order_id:
+        raise ValueError("work_order_id is required")
+
+    if not test_service_id:
+        raise ValueError("test_service_id is required")
+    
+    invoice_item_id = validated_data.get("invoice_item_id")
+
+    # Duplicate protection
+    existing = Collection.objects.filter(
+        work_order_id=work_order_id,
+        invoice_item_id=invoice_item_id,
+    ).first() if invoice_item_id else None
+
+    if existing:
+        return existing
+
+    # -----------------------------------
+    # Fetch full order details from Vidai
+    # -----------------------------------
+
+    order_data = fetch_vidai_order_detail(work_order_id)
+
+    patient = order_data.get("patient", {})
+
+    invoice_item = get_invoice_item(
+        order_data,
+        invoice_item_id=validated_data.get("invoice_item_id"),
+        test_service_id=test_service_id,
+    )
+
+    # -----------------------------------
+    # Order-level fields
+    # -----------------------------------
+
+    validated_data["bill_number"] = order_data.get("bill_number")
+    validated_data["bill_type"] = order_data.get("bill_type")
+    validated_data["visit_id"] = order_data.get("visit_id")
+    validated_data["visit_date"] = order_data.get("visit_date")
+
+    # -----------------------------------
+    # Patient-level fields
+    # -----------------------------------
+
+    validated_data["patient_name"] = patient.get("name")
+    validated_data["patient_mrn"] = patient.get("mrn")
+    validated_data["patient_age"] = patient.get("age")
+    validated_data["patient_gender"] = patient.get("gender")
+    validated_data["patient_type"] = patient.get("patient_type")
+    validated_data["cycle_number"] = patient.get("cycle_number")
+
+    first_name = patient.get("doctor_first_name", "") or ""
+    last_name = patient.get("doctor_last_name", "") or ""
+
+    validated_data["doctor_name"] = (
+        f"{first_name} {last_name}"
+    ).strip()
+
+    # -----------------------------------
+    # Invoice-item fields
+    # -----------------------------------
+
+    validated_data["invoice_item_id"] = invoice_item.get("id")
+
+    validated_data["billing_source_type"] = (
+        invoice_item.get("billing_source_type")
+    )
+
+    validated_data["billing_source_id"] = (
+        invoice_item.get("billing_source_id")
+    )
+
+    validated_data["billing_source_code"] = (
+        invoice_item.get("billing_source_code")
+    )
+
+    validated_data["billing_source_name"] = (
+        invoice_item.get("billing_source_name")
+    )
+
+    validated_data["test_service_code"] = (
+        invoice_item.get("test_service_code")
+    )
+
+    validated_data["test_service_name"] = (
+        invoice_item.get("test_service_name")
+    )
+
+    validated_data["charges"] = (
+        invoice_item.get("charges")
+    )
+
+    validated_data["net_amount"] = (
+        invoice_item.get("net_amount")
+    )
+
+    validated_data["is_from_package"] = (
+        invoice_item.get("is_from_package", False)
+    )
+
+    validated_data["is_refunded"] = (
+        invoice_item.get("is_refunded", False)
+    )
+
+    # -----------------------------------
+    # Resolve local test
+    # -----------------------------------
+
+    if validated_data.get("test") is None:
+
         test = resolve_test_from_service_id(
             validated_data["test_service_id"]
         )
+
         if test:
             validated_data["test"] = test
+
+            # Auto-resolve sample from test master
+            if validated_data.get("sample") is None:
+                test_sample = test.test_samples.filter(
+                    is_deleted=False
+                ).first()
+                if test_sample:
+                    validated_data["sample"] = test_sample.sample
+
+    # -----------------------------------
+    # Create collection
+    # -----------------------------------
 
     collection = Collection.objects.create(
         **validated_data,
