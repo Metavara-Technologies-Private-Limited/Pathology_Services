@@ -3,9 +3,9 @@ name: Pathology Backend Push Trigger
 on:
   push:
     branches:
-      - dev
-      - main
-      - staging
+      #- dev
+      #- main
+      #- staging
 
 jobs:
   build-and-deploy:
