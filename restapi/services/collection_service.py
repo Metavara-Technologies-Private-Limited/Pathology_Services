@@ -33,15 +33,26 @@ def get_vidai_access_token() -> str:
 def fetch_vidai_orders(
     limit=10,
     offset=0,
+    search=None,
+    from_date=None,
+    to_date=None,
 ) -> dict:
     token = get_vidai_access_token()
 
+    params = {
+        "limit": limit,
+        "offset": offset,
+    }
+    if search:
+        params["search"] = search
+    if from_date:
+        params["from_date"] = from_date
+    if to_date:
+        params["to_date"] = to_date
+
     response = requests.get(
         settings.ORDERS_URL,
-        params={
-            "limit": limit,
-            "offset": offset,
-        },
+        params=params,
         headers={
             "Authorization": f"Bearer {token}"
         },

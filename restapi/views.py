@@ -3082,6 +3082,9 @@ class VidaiOrdersView(APIView):
             data = fetch_vidai_orders(
                 limit=request.query_params.get("limit", 10),
                 offset=request.query_params.get("offset", 0),
+                search=request.query_params.get("search"),
+                from_date=request.query_params.get("fromDate"),
+                to_date=request.query_params.get("toDate"),
             )
         except Exception as error:
             return Response(
