@@ -1,8 +1,9 @@
 name: Pathology Backend Push Trigger
 
 on:
-  push:
-    branches:
+  workflow_dispatch:
+  #push:
+    #branches:
       #- dev
       #- main
       #- staging
