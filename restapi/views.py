@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404
+import json
 from requests import request 
 from django.db.models import Q
 from restapi.pagination import StandardPagination
@@ -2804,24 +2805,6 @@ class ResultEntryCreateAPIView(APIView):
 
 class ResultEntryListAPIView(APIView):
     def get(self, request):
-
-        receive_samples = ReceiveSample.objects.filter(
-            status="Shipped",
-            is_deleted=False
-        ).order_by("-id")
-
-        for sample in receive_samples:
-            ResultEntry.objects.get_or_create(
-                receive_sample=sample,
-                defaults={
-                    "parameter_name": sample.test_name,
-                    "result_value": "",
-                    "remarks": "",
-                    "entered_by": "",
-                    "result_status": "Pending"
-                }
-            )
-
         results = ResultEntry.objects.filter(
             is_deleted=False
         ).order_by("-id")
@@ -2904,32 +2887,44 @@ from restapi.models.test_test import Test, TestParameter, TestTemplate
 
 class ResultEntryDetailsAPIView(APIView):
 
+    def _resolve_test(self, sample):
+        candidate_query = (
+            Q(test_code__iexact=sample.test_code)
+            | Q(test_code__iexact=sample.test_name)
+            | Q(test_name__iexact=sample.test_name)
+            | Q(test_name__icontains=sample.test_name)
+            | Q(test_name__iexact=sample.test_code)
+            | Q(service_name__iexact=sample.service_name)
+            | Q(service_name__icontains=sample.service_name)
+            | Q(print_name__iexact=sample.test_name)
+            | Q(print_name__icontains=sample.test_name)
+            | Q(print_name__iexact=sample.test_code)
+            | Q(print_name__icontains=sample.test_code)
+            | Q(test_templates__template__template_name__iexact=sample.test_name)
+            | Q(test_templates__template__template_name__icontains=sample.test_name)
+            | Q(test_templates__template__service_name__iexact=sample.service_name)
+            | Q(test_templates__template__service_name__icontains=sample.service_name)
+        )
+
+        return (
+            Test.objects.filter(is_deleted=False)
+            .filter(candidate_query)
+            .distinct()
+            .order_by("-id")
+            .first()
+        )
+
     def get(self, request, result_id):
 
         result = get_object_or_404(ResultEntry, id=result_id, is_deleted=False)
 
         sample = result.receive_sample
 
-        test = Test.objects.filter(
-            test_code=sample.test_code,
-            is_deleted=False
-        ).first()
-
-        if not test:
-            test = Test.objects.filter(
-                test_name__icontains=sample.test_name,
-                is_deleted=False
-            ).first()
-
-        if not test:
-            return Response(
-                {
-                    "message": f"No Test configuration found for '{sample.test_name}'",
-                    "sample_id": sample.id,
-                    "test_code": sample.test_code,
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        test = self._resolve_test(sample)
+        try:
+            saved_result = json.loads(result.result_value) if result.result_value else {}
+        except (TypeError, json.JSONDecodeError):
+            saved_result = {}
 
         response_data = {
             "result_entry": {"id": result.id, "status": result.result_status},
@@ -2940,15 +2935,64 @@ class ResultEntryDetailsAPIView(APIView):
                 "patient_code": sample.patient_code,
             },
             "test": {
-                "id": str(test.id),
-                "test_name": test.test_name,
-                "report_type": test.report_type,
-                "suggestion_note": test.suggestion_note,
-                "disclaimer": test.disclaimer,
+                "id": str(test.id) if test else None,
+                "test_name": test.test_name if test else sample.test_name,
+                "report_type": test.report_type if test else "TEMPLATE",
+                "suggestion_note": test.suggestion_note if test else None,
+                "disclaimer": test.disclaimer if test else None,
             },
+            "saved_result": saved_result,
         }
 
-        if test.report_type == "PARAMETER":
+        templates = []
+        seen_template_ids = set()
+
+        if test:
+            test_templates = (
+                TestTemplate.objects.filter(test=test, is_deleted=False)
+                .select_related("template")
+                .filter(template__is_deleted=False, template__status=True)
+            )
+        else:
+            test_templates = TestTemplate.objects.none()
+
+        for tt in test_templates:
+            seen_template_ids.add(str(tt.template.id))
+            templates.append(
+                {
+                    "id": tt.template.id,
+                    "template_name": tt.template.template_name,
+                    "template_text": tt.template.template_text,
+                    "template_json": tt.template.template_json,
+                }
+            )
+
+        master_templates = (
+            Template.objects.filter(
+                is_deleted=False,
+                status=True,
+                template_for="PATHOLOGY",
+            )
+            .order_by("template_name", "-id")
+        )
+
+        for template in master_templates.distinct():
+            template_id = str(template.id)
+            if template_id in seen_template_ids:
+                continue
+            templates.append(
+                {
+                    "id": template.id,
+                    "template_name": template.template_name,
+                    "template_text": template.template_text,
+                    "template_json": template.template_json,
+                }
+            )
+            seen_template_ids.add(template_id)
+
+        response_data["templates"] = templates
+
+        if test and test.report_type == "PARAMETER":
 
             parameters = []
 
@@ -2983,27 +3027,59 @@ class ResultEntryDetailsAPIView(APIView):
             response_data["parameters"] = parameters
 
         else:
-
-            templates = []
-
-            test_templates = TestTemplate.objects.filter(
-                test=test, is_deleted=False
-            ).select_related("template")
-
-            for tt in test_templates:
-
-                templates.append(
-                    {
-                        "id": tt.template.id,
-                        "template_name": tt.template.template_name,
-                        "template_text": tt.template.template_text,
-                        "template_json": tt.template.template_json,
-                    }
-                )
-
-            response_data["templates"] = templates
+            response_data["parameters"] = []
 
         return Response(response_data)
+
+    def put(self, request, result_id):
+        result = get_object_or_404(ResultEntry, id=result_id, is_deleted=False)
+
+        payload = request.data if isinstance(request.data, dict) else {}
+        parameter_results = payload.get("parameter_results", [])
+
+        normalized_rows = []
+        for row in parameter_results:
+            normalized_rows.append(
+                {
+                    "parameter_id": row.get("parameter_id"),
+                    "parameter_name": row.get("parameter_name"),
+                    "parameter_code": row.get("parameter_code"),
+                    "operator": row.get("operator", "="),
+                    "value": row.get("value", ""),
+                    "status": row.get("status", []),
+                    "warn": bool(row.get("warn", False)),
+                }
+            )
+
+        result.result_value = json.dumps(
+            {
+                "parameter_results": normalized_rows,
+                "suggestion_note": payload.get("suggestion_note", ""),
+                "foot_note": payload.get("foot_note", ""),
+                "referred_by": payload.get("referred_by", ""),
+                "pathologist": payload.get("pathologist", ""),
+                "selected_templates": payload.get("selected_templates", []),
+            }
+        )
+        if payload.get("remarks") is not None:
+            result.remarks = payload.get("remarks")
+        if payload.get("entered_by") is not None:
+            result.entered_by = payload.get("entered_by")
+        if payload.get("result_status"):
+            result.result_status = payload.get("result_status")
+        result.save()
+
+        return Response(
+            {
+                "message": "Result details saved successfully",
+                "data": {
+                    "id": result.id,
+                    "result_status": result.result_status,
+                    "result_value": json.loads(result.result_value) if result.result_value else {},
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ResultEntryUpdateAPIView(APIView):
