@@ -3069,6 +3069,30 @@ class ResultEntryDetailsAPIView(APIView):
             result.result_status = payload.get("result_status")
         result.save()
 
+        if result.result_status == "Completed":
+            from django.utils import timezone
+            from restapi.models.authorization_models import Authorization
+
+            sample = result.receive_sample
+            Authorization.objects.update_or_create(
+                result_entry=result,
+                defaults={
+                    "order_date": timezone.now().date(),
+                    "order_time": timezone.now().time(),
+                    "patient_name": sample.patient_name,
+                    "patient_age": sample.patient_age,
+                    "patient_gender": sample.patient_gender,
+                    "patient_code": sample.patient_code,
+                    "patient_type": "Registered",
+                    "doctor_name": "N/A",
+                    "bill_no": sample.shipment_no,
+                    "no_of_orders": 1,
+                    "test_name": sample.test_name,
+                    "result_status": result.result_status,
+                    "authorization_status": "Pending",
+                },
+            )
+
         return Response(
             {
                 "message": "Result details saved successfully",
